@@ -7,6 +7,7 @@ class Paper(models.Model):
     min_price = models.IntegerField('мінімальна ціна')
     max_price = models.IntegerField('максимальна ціна')
     # days_valid = models.IntegerField('скільки днів дійсний', null=True)
+    # todo maybe number of times used
     # description
 
     class Meta:

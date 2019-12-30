@@ -30,9 +30,13 @@ class ParticipantAdmin(admin.ModelAdmin):
 
 
 class ClassUnitAmdin(admin.ModelAdmin):
+    class Media:
+        js = ('ParticipantPapers.js', )
+
     list_display = ('regular_class', 'date')
     list_filter = ('regular_class', )
     inlines = (ClassParticipationInline,)
+
 
 
 class RegularClassesAdmin(admin.ModelAdmin):
