@@ -35,7 +35,8 @@ class RegularClass(models.Model):
     start_date = models.DateField('дата початку')
     end_date = models.DateField('дата кінця', null=True, blank=True)
     teacher = models.ForeignKey(
-        Teacher, blank=True, null=True, on_delete=models.SET_NULL
+        Teacher, blank=True, null=True, on_delete=models.SET_NULL,
+        verbose_name='викладач/ка',
     )
     # schedule
     # one time price
@@ -49,6 +50,7 @@ class RegularClass(models.Model):
 
 
 class Participant(models.Model):
+    # todo distingiush between several people with the same name
     name = models.CharField("ім'я", max_length=260)
     papers = models.ManyToManyField(Paper, through='ParticipantPaper')
     # mail, phone number etc
@@ -62,11 +64,16 @@ class Participant(models.Model):
 
 
 class ParticipantPaper(models.Model):
-    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
-    paper = models.ForeignKey(Paper, on_delete=models.CASCADE)
-    date_purchased = models.DateField()
-    price = models.IntegerField()
-    expired = models.BinaryField()
+    participant = models.ForeignKey(
+        Participant, on_delete=models.CASCADE, verbose_name="учасни_ця",
+    )
+    paper = models.ForeignKey(
+        Paper, on_delete=models.CASCADE, verbose_name="папірець"
+    )
+    date_purchased = models.DateField("дата купівлі")
+    # check with the price of paper
+    price = models.IntegerField("ціна")
+    expired = models.BinaryField("недійсний")
 
     def __str__(self):
         # TODO does this issue new db query? should select_releted be used?
@@ -75,9 +82,13 @@ class ParticipantPaper(models.Model):
 
 
 class ClassUnit(models.Model):
-    regular_class = models.ForeignKey(RegularClass, on_delete=models.CASCADE)
+    regular_class = models.ForeignKey(
+        RegularClass, on_delete=models.CASCADE, verbose_name="курс"
+    )
     date = models.DateField('дата')
-    participants = models.ManyToManyField(Participant, through='ClassParticipation')
+    participants = models.ManyToManyField(
+        Participant, through='ClassParticipation', verbose_name="учасни_ці"
+    )
     # substitute teacher
 
     class Meta:
@@ -91,8 +102,20 @@ class ClassUnit(models.Model):
 
 
 class ClassParticipation(models.Model):
-    class_unit = models.ForeignKey(ClassUnit, on_delete=models.CASCADE)
-    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+    class_unit = models.ForeignKey(
+        ClassUnit, on_delete=models.CASCADE, verbose_name="заняття"
+    )
+    participant = models.ForeignKey(
+        Participant, on_delete=models.CASCADE, verbose_name="учасни_ця"
+    )
     # TODO add restriction that this should be participant's paper, make this field optional
-    paper_used = models.ForeignKey(ParticipantPaper, on_delete=models.PROTECT)
-    # TODO if no paper was used add a price
+    paper_used = models.ForeignKey(
+        ParticipantPaper, on_delete=models.PROTECT, blank=True, null=True,
+        verbose_name="використаний папірець"
+    )
+    one_time_price = models.IntegerField('одноразова ціна', blank=True, null=True)
+    comment = models.TextField('коментар', null=True, blank=True)
+    # todo volunteer status?
+
+    def __str__(self):
+        return f'{self.participant} на {self.class_unit}'

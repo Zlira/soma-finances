@@ -18,6 +18,7 @@ class ParticipantPaperInline(admin.TabularInline):
 class ClassParticipationInline(admin.TabularInline):
     # TODO limit papers use to selected user. is it even possible?
     model = ClassUnit.participants.through
+    autocomplete_fields = ('participant', )
     extra = 1
 
     verbose_name = 'Відвідування заняття'
