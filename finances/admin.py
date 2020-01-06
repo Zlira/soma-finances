@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+import pandas as pd
+
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
@@ -44,7 +46,17 @@ class TeacherAdmin(admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
-        extra_context['salary'] = 200
+
+        teacher = Teacher.objects.get(id=object_id)
+        salary_details = teacher.get_detailed_salary_for_period(
+            '2019-12-01', '2019-12-15'
+        )
+        salary_details = {
+            class_name: pd.DataFrame.from_dict(
+                {i['date']: i['payment_methods'] for i in salary}, orient='index'
+            ).to_html() for class_name, salary in salary_details.items()
+        }
+        extra_context['salary_details'] = salary_details
         return super().change_view(
             request, object_id, form_url, extra_context=extra_context,
         )

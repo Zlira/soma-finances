@@ -4,4 +4,8 @@
 {%block content%}
   {{ block.super }}
   <p>Зарплата за 1-15 грудня: {{salary}}</p>
+  {% for class_name, details in salary_details.items %}
+    <h3>{{class_name}}</h3>
+    {{details|safe}}
+  {% endfor %}
 {% endblock %}

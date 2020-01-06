@@ -1,3 +1,6 @@
+from itertools import groupby
+from operator import itemgetter
+
 from django.db import models
 
 from phonenumber_field.modelfields import PhoneNumberField
@@ -5,6 +8,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 # TODO add unique constraints
 
 
+ONE_TIME_PRICE_LABEL = 'one time price'
 MIN_ONE_TIME_PAPER_PRICE = 35
 MIN_TEACHERS_SALARY = 100
 
@@ -25,7 +29,7 @@ class Paper(models.Model):
 
     # TODO create a manager with this?
     @classmethod
-    def one_time_price_expression(cls):
+    def get_one_time_price_expression(cls):
         return models.Case(
             models.When(number_of_uses__isnull=True, then=models.Value(MIN_ONE_TIME_PAPER_PRICE)),
             default=models.F('price') / models.F('number_of_uses'),
@@ -51,7 +55,28 @@ class Teacher(models.Model):
     def __str__(self):
         return self.name
 
+    def get_classes_for_period(self, start_date, end_date):
+        # TODO do i even need this?
+        return RegularClass.objects.filter(
+            classunit__teacher=self,
+            classunit__date__gte=start_date,
+            classunit__date__lte=end_date,
+        ).distinct()
     #TODO add a method to calculate salary for a period
+
+    def get_detailed_salary_for_period(self, start_date, end_date):
+        units = ClassUnit.objects.filter(
+            teacher=self,
+            date__gte=start_date,
+            date__lte=end_date,
+        ).order_by('regular_class', 'date').select_related('regular_class')
+        res = []
+        for unit in units:
+            res.append({
+                'class_name': unit.regular_class.name, 'date': unit.date,
+                'payment_methods': unit.get_price_by_payement_methods()
+            })
+        return {key: list(group) for key, group in groupby(res, itemgetter('class_name'))}
 
 
 class RegularClass(models.Model):
@@ -130,6 +155,27 @@ class ClassUnit(models.Model):
     def __str__(self):
         return f'{self.regular_class} ({self.date})'
 
+    def get_price_by_payement_methods(self, filters=None):
+        filters = filters or []
+        paper_prices = (
+            Paper.objects
+            .annotate(one_time_price=Paper.get_one_time_price_expression())
+            .values('id', 'one_time_price', 'name')
+        )
+        payment_methods = ClassParticipation.get_aggregated_payment_methods(
+            ClassParticipation.objects
+            .filter(class_unit=self, *filters)
+        )
+        paper_prices = {
+            str(item['id']): {'name': item['name'], 'price': item['one_time_price']}
+            for item in paper_prices
+        }
+        payment_methods = {item['payment_method']: item['count'] for item in payment_methods}
+        res = {ONE_TIME_PRICE_LABEL: payment_methods.get(ONE_TIME_PRICE_LABEL, 0)}
+        for paper_id, paper_info in paper_prices.items():
+            res[paper_info['name']] = payment_methods.get(paper_id, 0)
+        return res
+
 
 class ClassParticipation(models.Model):
     # TODO add a constraint that only paper_used or one time price is
@@ -149,3 +195,31 @@ class ClassParticipation(models.Model):
 
     def __str__(self):
         return f'{self.participant} на {self.class_unit}'
+
+    @classmethod
+    def get_payment_method_expression(cls):
+        # TODO maybe use one type: either strig or int
+        return models.Case(
+            models.When(paid_one_time_price=True, then=models.Value(ONE_TIME_PRICE_LABEL)),
+            models.When(paper_used__isnull=False, then=models.F('paper_used__paper')),
+            default=models.Value(0)
+        )
+
+    # TODO move this to a custom manager?
+    @classmethod
+    def get_aggregated_payment_methods(cls, query_set):
+        return (
+            query_set
+            .annotate(payment_method=cls.get_payment_method_expression())
+            .values('payment_method')
+            .annotate(count=models.Count('payment_method'))
+            .values('payment_method', 'count')
+        )
+
+    def get_price(self):
+        price = None
+        if self.paid_one_time_price:
+            price = self.class_unit.regular_class.one_time_price
+        elif self.paper_used:
+            price = self.paper_used.paper.get_one_time_price()
+        return price
