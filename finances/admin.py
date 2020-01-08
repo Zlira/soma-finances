@@ -51,10 +51,10 @@ class TeacherAdmin(admin.ModelAdmin):
         salary_details = teacher.get_detailed_salary_for_period(
             '2019-12-01', '2019-12-15'
         )
+        unit_salary_label = 'всього за заняття'
         salary_details = {
-            class_name: pd.DataFrame.from_dict(
-                {i['date']: i['payment_methods'] for i in salary}, orient='index'
-            ).to_html() for class_name, salary in salary_details.items()
+            f'{class_name}: {df[unit_salary_label].sum()} грн': df.to_html()
+            for class_name, df in salary_details.items()
         }
         extra_context['salary_details'] = salary_details
         return super().change_view(
