@@ -11,12 +11,22 @@ from .models import (
 
 class ParticipantPaperInline(admin.TabularInline):
     model = Participant.papers.through
-    fields = ('paper', 'date_purchased', 'is_volunteer', )
+    fields = ('paper', 'date_purchased', 'is_volunteer',
+              'number_of_uses', 'is_expired')
+    readonly_fields = ('number_of_uses', 'is_expired' )
     extra = 1
     # TODO add the ability to set price (defualt + donation)
 
     verbose_name = 'Папірець учасни_ці'
     verbose_name_plural = 'Папірці учасни_ці'
+
+    def number_of_uses(self, obj):
+        return obj.get_number_of_uses()
+    number_of_uses.short_description = 'разів використаний'
+
+    def is_expired(self, obj):
+        return obj.is_expired()
+    is_expired.short_description = 'недійсний'
 
 
 class ClassParticipationInline(admin.TabularInline):
