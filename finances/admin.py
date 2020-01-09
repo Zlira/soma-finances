@@ -7,25 +7,45 @@ from .models import (
     Paper, Teacher, RegularClass, Participant,
     ClassUnit
 )
+from .forms import AddParticipantPaperForm
+
+
+class AddParticipantPaperInline(admin.StackedInline):
+    model = Participant.papers.through
+    form = AddParticipantPaperForm
+    extra = 1
+    # TODO add the ability to set price (defualt + donation)
+
+    verbose_name = 'Додати папірець учасни_ці'
+    verbose_name_plural = 'Додати папірці учасни_ці'
+
+    def get_queryset(self, obj=None):
+        return self.model.objects.none()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class ParticipantPaperInline(admin.TabularInline):
     model = Participant.papers.through
-    fields = ('paper', 'date_purchased', 'is_volunteer',
-              'number_of_uses', 'is_expired')
-    readonly_fields = ('number_of_uses', 'is_expired' )
-    extra = 1
+    fields = ('paper', 'is_expired', 'date_purchased', 'is_volunteer',
+              'number_of_uses', )
+    readonly_fields = ('number_of_uses', 'is_expired', )
+    extra = 0
     # TODO add the ability to set price (defualt + donation)
 
     verbose_name = 'Папірець учасни_ці'
     verbose_name_plural = 'Папірці учасни_ці'
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
     def number_of_uses(self, obj):
         return obj.get_number_of_uses()
     number_of_uses.short_description = 'разів використаний'
 
     def is_expired(self, obj):
-        return obj.is_expired()
+        return 'так' if obj.is_expired() else 'ні'
     is_expired.short_description = 'недійсний'
 
 
@@ -37,7 +57,6 @@ class ClassParticipationInline(admin.TabularInline):
 
     verbose_name = 'Відвідування заняття'
     verbose_name_plural = 'Відвідування заняття'
-
 
 
 class PaperAdmin(admin.ModelAdmin):
@@ -73,7 +92,7 @@ class TeacherAdmin(admin.ModelAdmin):
 
 
 class ParticipantAdmin(admin.ModelAdmin):
-    inlines = (ParticipantPaperInline, )
+    inlines = (AddParticipantPaperInline, ParticipantPaperInline, )
     search_fields = ['name']
 
 
@@ -86,7 +105,6 @@ class ClassUnitAmdin(admin.ModelAdmin):
     list_display = ('regular_class', 'date')
     list_filter = ('regular_class', )
     inlines = (ClassParticipationInline,)
-
 
 
 admin.site.register(ClassUnit, ClassUnitAmdin)
