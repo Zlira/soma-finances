@@ -22,5 +22,4 @@ def participant_papers(request):
         )
     )
     qs = connection.queries
-    print(len(qs))
     return JsonResponse({'participantPapers': list(res)})
