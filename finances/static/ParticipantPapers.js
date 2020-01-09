@@ -11,7 +11,6 @@ function addPaperFilters(event) {
        .then(res => res.json())
        .then(res => {
            var options = constructOptions(res.participantPapers)
-           console.log(options)
            setOptions("id_classparticipation_set-2-paper_used", options)
        })
   })

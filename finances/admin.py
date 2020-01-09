@@ -13,8 +13,17 @@ from .forms import AddParticipantPaperForm
 class AddParticipantPaperInline(admin.StackedInline):
     model = Participant.papers.through
     form = AddParticipantPaperForm
+    fieldsets = [(
+        None, {
+            'fields': ('paper', 'date_purchased', 'is_volunteer', 'price'),
+            'classes': ('add-participant-paper', ),
+        }
+    )]
     extra = 1
+    max_num = 1
     # TODO add the ability to set price (defualt + donation)
+    class Media:
+        js = ('AddParticipantPaper.js', )
 
     verbose_name = 'Додати папірець учасни_ці'
     verbose_name_plural = 'Додати папірці учасни_ці'

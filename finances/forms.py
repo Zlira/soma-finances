@@ -4,7 +4,7 @@ from .models import ParticipantPaper
 
 
 class AddParticipantPaperForm(ModelForm):
-    внесок = IntegerField()
+    price = IntegerField(label='Внесок')
 
     class Meta:
         model = ParticipantPaper
