@@ -6,6 +6,8 @@ from django.db import models
 import pandas as pd
 
 from .constants import ONE_TIME_PRICE_LABEL, MIN_TEACHERS_SALARY
+from .paper import Paper
+from .class_unit import ClassUnit
 
 
 class Teacher(models.Model):
