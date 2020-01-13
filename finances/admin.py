@@ -5,7 +5,7 @@ import pandas as pd
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
-    ClassUnit, Donation
+    ClassUnit, Donation, SingleEvent
 )
 from .forms import AddParticipantPaperForm
 
@@ -120,9 +120,14 @@ class DonationAdmin(admin.ModelAdmin):
     list_display = ('source', 'amount', 'date')
 
 
+class SingleEventAdmin(admin.ModelAdmin):
+    list_display = ('name', 'date', 'admission_sum', 'bar_sum')
+
+
 admin.site.register(ClassUnit, ClassUnitAmdin)
 admin.site.register(Paper, PaperAdmin)
 admin.site.register(Teacher, TeacherAdmin)
 admin.site.register(RegularClass)
 admin.site.register(Participant, ParticipantAdmin)
 admin.site.register(Donation, DonationAdmin)
+admin.site.register(SingleEvent, SingleEventAdmin)
