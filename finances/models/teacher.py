@@ -6,6 +6,8 @@ from django.db import models
 import pandas as pd
 
 from .constants import ONE_TIME_PRICE_LABEL, MIN_TEACHERS_SALARY
+from .paper import Paper
+from .class_unit import ClassUnit
 
 
 class Teacher(models.Model):
@@ -49,7 +51,7 @@ class Teacher(models.Model):
             payment_methods = unit.get_price_by_payement_methods()
             unit_payments.append({
                 'regular_class': unit.regular_class, 'date': unit.date,
-                'payment_methods':payment_methods,
+                'payment_methods': payment_methods,
             })
         res = {}
         for regular_class, unit_group in groupby(unit_payments, itemgetter('regular_class')):
@@ -66,9 +68,9 @@ class Teacher(models.Model):
             unit_salary = unit_salary.where(
                 unit_salary >= MIN_TEACHERS_SALARY, MIN_TEACHERS_SALARY
             )
-            salary_df.columns = [prices_df.loc['name', col] for col in salary_df]
+            salary_df.columns = [prices_df.loc['name', col]
+                                 for col in salary_df]
             unit_salary_label = 'всього за заняття'
             salary_df = salary_df.assign(**{unit_salary_label: unit_salary})
             res[regular_class.name] = salary_df
         return res
-

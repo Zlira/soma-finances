@@ -3,7 +3,6 @@ from django.db import models
 from .regular_class import RegularClass
 from .participant import Participant
 from .class_participation import ClassParticipation
-from .teacher import Teacher
 
 
 class ClassUnit(models.Model):
@@ -15,7 +14,7 @@ class ClassUnit(models.Model):
         Participant, through='ClassParticipation', verbose_name="учасни_ці"
     )
     teacher = models.ForeignKey(
-        Teacher, blank=True, null=True, on_delete=models.SET_NULL,
+        "Teacher", blank=True, null=True, on_delete=models.SET_NULL,
         verbose_name='викладач/ка',
     )
     comment = models.TextField('коментар', null=True, blank=True)
@@ -24,7 +23,6 @@ class ClassUnit(models.Model):
         ordering = ['-date', 'regular_class']
         verbose_name = 'Конкретне заняття'
         verbose_name_plural = 'Конкретні заняття'
-
 
     def __str__(self):
         return f'{self.regular_class} ({self.date})'
@@ -38,4 +36,3 @@ class ClassUnit(models.Model):
             .filter(class_unit=self, *filters)
         )
         return {item['payment_method']: item['count'] for item in payment_methods}
-
