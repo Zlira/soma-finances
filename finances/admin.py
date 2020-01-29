@@ -5,7 +5,7 @@ import pandas as pd
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
-    ClassUnit
+    ClassUnit, Donation, SingleEvent, Expense
 )
 from .forms import AddParticipantPaperForm
 
@@ -116,8 +116,24 @@ class ClassUnitAmdin(admin.ModelAdmin):
     inlines = (ClassParticipationInline,)
 
 
+class DonationAdmin(admin.ModelAdmin):
+    list_display = ('source', 'amount', 'date')
+
+
+class SingleEventAdmin(admin.ModelAdmin):
+    list_display = ('name', 'date', 'admission_sum', 'bar_sum')
+
+
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ('description', 'category', 'date', 'amount')
+    list_filter = ('category', )
+
+
 admin.site.register(ClassUnit, ClassUnitAmdin)
 admin.site.register(Paper, PaperAdmin)
 admin.site.register(Teacher, TeacherAdmin)
 admin.site.register(RegularClass)
 admin.site.register(Participant, ParticipantAdmin)
+admin.site.register(Donation, DonationAdmin)
+admin.site.register(SingleEvent, SingleEventAdmin)
+admin.site.register(Expense, ExpenseAdmin)

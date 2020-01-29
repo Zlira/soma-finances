@@ -12,6 +12,7 @@ async function fetchPaperData(paper_id) {
 }
 
 
+// TODO if 'volunteer field is check set price to 0
 class Fieldset {
     constructor(node) {
         this.node = node
@@ -60,20 +61,18 @@ class Fieldset {
     updatePriceLabel() {
         if (!this.priceLabel) {
             this.priceLabel = document.createElement('span')
-            this.priceLabel.innerHTML = 'i am ready'
             this.priceField.parentNode.appendChild(this.priceLabel)
         }
         let labelInnerHtml = ''
         if (this.currentPaperPrice) {
             const priceDiff = this.totalPrice - this.currentPaperPrice
-            labelInnerHtml =`${this.currentPaperPrice} грн + ${priceDiff} донації`
+            labelInnerHtml =`${this.currentPaperPrice} грн + ${priceDiff} пожертви`
         }
         this.priceLabel.innerHTML = labelInnerHtml
     }
 
     onPriceChange() {
         this.totalPrice = parseInt(this.priceField.value)
-        // debugger
         if (this.currentPaperPrice && this.currentPaperPrice > this.totalPrice) {
             this.totalPrice = this.currentPaperPrice
             this.priceField.value = this.totalPrice
@@ -84,7 +83,6 @@ class Fieldset {
 
 function initAddPaperFieldsets() {
     const fieldsetNodes = document.querySelectorAll('.add-participant-paper')
-    // debugger
     fieldsetNodes.forEach(
         node => FIELDSETS.push(new Fieldset(node))
     )
