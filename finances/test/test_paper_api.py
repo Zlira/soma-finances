@@ -20,8 +20,8 @@ class PaperTestCase(TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_get_paper(self):
-        name = str()
-        price = int()
+        name = ''
+        price = 0
         paper = Paper.objects.create(name=name, price=price)
         self.client.login(username=user_name, password=user_password)
         response = self.client.get(reverse("paper"), {'paper_id': paper.id})
@@ -31,9 +31,7 @@ class PaperTestCase(TestCase):
         self.assertEqual(result['id'], paper.id)
 
     def test_paper_id_out_of_range(self):
-        name = str()
-        price = int()
-        paper = Paper.objects.create(name=name, price=price)
+        paper = Paper.objects.create(name='', price=0)
         self.client.login(username=user_name, password=user_password)
         response = self.client.get(reverse("paper"), {'paper_id': paper.id+1})
         self.assertEqual(response.status_code, 404)

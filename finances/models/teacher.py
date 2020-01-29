@@ -31,6 +31,7 @@ class Teacher(models.Model):
     def get_detailed_salary_for_period(self, start_date, end_date):
         # TODO subtruct volonteer papers
         # TODO split this to some usable functions
+
         paper_prices = (
             Paper.objects
             .annotate(one_time_price=Paper.get_one_time_price_expression())
@@ -53,6 +54,7 @@ class Teacher(models.Model):
                 'regular_class': unit.regular_class, 'date': unit.date,
                 'payment_methods': payment_methods,
             })
+
         res = {}
         for regular_class, unit_group in groupby(unit_payments, itemgetter('regular_class')):
             prices_df = prices_df.assign(**{
