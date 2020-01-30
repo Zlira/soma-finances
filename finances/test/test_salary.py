@@ -2,7 +2,9 @@ from datetime import date
 
 from django.test import TestCase
 
-from finances.models import Teacher, RegularClass, ClassUnit, Participant, ClassParticipation
+from finances.models import Teacher,\
+    RegularClass, ClassUnit, Participant,\
+    ClassParticipation, Paper, ParticipantPaper
 from finances.models.constants import MIN_TEACHERS_SALARY
 
 # res['Йога']['мега папірець'][date(2019, 12, 1)]
@@ -39,16 +41,249 @@ class TestSalary(TestCase):
         reg_class_name = 'Yoga'
         reg_class_price = 500
         reg_class = RegularClass.objects.create(
-            name=reg_class_name, start_date='2019-02-01', one_time_price=reg_class_price)
-        class_unit = ClassUnit.objects.create(regular_class=reg_class,
-                                              date=unit_date,
-                                              teacher=self.teacher)
+            name=reg_class_name,
+            start_date='2019-02-01',
+            one_time_price=reg_class_price
+        )
+        class_unit = ClassUnit.objects.create(
+            regular_class=reg_class,
+            date=unit_date,
+            teacher=self.teacher
+        )
         participant = Participant.objects.create(name='Oopyr')
         ClassParticipation.objects.create(
-            class_unit=class_unit, participant=participant, paid_one_time_price=True)
+            class_unit=class_unit,
+            participant=participant,
+            paid_one_time_price=True
+        )
         res = self.teacher.get_detailed_salary_for_period(
             unit_date, unit_date)
         self.assertEqual(
             res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
             reg_class_price/2
+        )
+
+    def test_invalid_salary_period(self):
+        unit_date = date(2019, 2, 10)
+        date_before_class = date(2019, 2, 9)
+        date_after_class = date(2019, 2, 11)
+        reg_class_name = 'Yoga'
+        reg_class = RegularClass.objects.create(
+            name=reg_class_name,
+            start_date='2019-02-01'
+        )
+        class_unit = ClassUnit.objects.create(
+            regular_class=reg_class,
+            date=unit_date,
+            teacher=self.teacher
+        )
+        participant = Participant.objects.create(name='Oopyr')
+
+        ClassParticipation.objects.create(
+            class_unit=class_unit,
+            participant=participant,
+        )
+        res = self.teacher.get_detailed_salary_for_period(
+            date_before_class, date_before_class)
+        self.assertEqual(res, {})
+
+        res = self.teacher.get_detailed_salary_for_period(
+            date_after_class, date_after_class)
+        self.assertEqual(res, {})
+
+    def test_other_teacher(self):
+        unit_date = date(2019, 2, 10)
+        reg_class_name = 'Yoga'
+        other_teacher = Teacher.objects.create(name='Grishnak')
+        reg_class = RegularClass.objects.create(
+            name=reg_class_name,
+            start_date='2019-02-01',
+        )
+        class_unit = ClassUnit.objects.create(
+            regular_class=reg_class,
+            date=unit_date,
+            teacher=other_teacher
+        )
+        participant = Participant.objects.create(name='Oopyr')
+        ClassParticipation.objects.create(
+            class_unit=class_unit,
+            participant=participant,
+        )
+        res = self.teacher.get_detailed_salary_for_period(
+            unit_date, unit_date)
+        self.assertEqual(res, {})
+
+    def test_paper(self):
+        unit_date = date(2019, 2, 10)
+        reg_class_name = 'Yoga'
+        paper_price = 1000
+        paper_name = 'Maupa'
+        reg_class = RegularClass.objects.create(
+            name=reg_class_name,
+            start_date='2019-02-01',
+        )
+        class_unit = ClassUnit.objects.create(
+            regular_class=reg_class,
+            date=unit_date,
+            teacher=self.teacher
+        )
+        participant = Participant.objects.create(name='Oopyr')
+        paper = Paper.objects.create(
+            name=paper_name,
+            price=paper_price,
+            number_of_uses=1
+        )
+        participant_paper = ParticipantPaper.objects.create(
+            participant=participant,
+            paper=paper,
+            date_purchased='2019-02-01'
+        )
+        ClassParticipation.objects.create(
+            class_unit=class_unit,
+            participant=participant,
+            paper_used=participant_paper
+        )
+        res = self.teacher.get_detailed_salary_for_period(
+            unit_date, unit_date)
+        self.assertEqual(
+            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            paper_price/2
+        )
+
+    def test_multiple_regular_class(self):
+        unit_date = date(2019, 2, 10)
+        first_reg_class_name = 'Yoga'
+        second_reg_class_name = 'BeerEating'
+        paper_price = 1000
+        paper_name = 'Maupa'
+        first_reg_class = RegularClass.objects.create(
+            name=first_reg_class_name,
+            start_date='2019-02-01',
+        )
+        second_reg_class = RegularClass.objects.create(
+            name=second_reg_class_name,
+            start_date='2019-02-01',
+        )
+        first_class_unit = ClassUnit.objects.create(
+            regular_class=first_reg_class,
+            date=unit_date,
+            teacher=self.teacher
+        )
+        second_class_unit = ClassUnit.objects.create(
+            regular_class=second_reg_class,
+            date=unit_date,
+            teacher=self.teacher
+        )
+        participant = Participant.objects.create(name='Oopyr')
+        paper = Paper.objects.create(
+            name=paper_name,
+            price=paper_price,
+            number_of_uses=1
+        )
+        participant_paper = ParticipantPaper.objects.create(
+            participant=participant,
+            paper=paper,
+            date_purchased='2019-02-01'
+        )
+        ClassParticipation.objects.create(
+            class_unit=first_class_unit,
+            participant=participant,
+            paper_used=participant_paper
+        )
+        ClassParticipation.objects.create(
+            class_unit=second_class_unit,
+            participant=participant,
+            paper_used=participant_paper
+        )
+        res = self.teacher.get_detailed_salary_for_period(
+            unit_date, unit_date)
+        self.assertEqual(
+            res[first_reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            paper_price/2
+        )
+        self.assertEqual(
+            res[second_reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            paper_price/2
+        )
+
+    def test_min_salary(self):
+        unit_date = date(2019, 2, 10)
+        reg_class_name = 'Yoga'
+        paper_price = MIN_TEACHERS_SALARY/2
+        paper_name = 'Maupa'
+        reg_class = RegularClass.objects.create(
+            name=reg_class_name,
+            start_date='2019-02-01',
+        )
+        class_unit = ClassUnit.objects.create(
+            regular_class=reg_class,
+            date=unit_date,
+            teacher=self.teacher
+        )
+        participant = Participant.objects.create(name='Oopyr')
+        paper = Paper.objects.create(
+            name=paper_name,
+            price=paper_price,
+            number_of_uses=1
+        )
+        participant_paper = ParticipantPaper.objects.create(
+            participant=participant,
+            paper=paper,
+            date_purchased='2019-02-01'
+        )
+        ClassParticipation.objects.create(
+            class_unit=class_unit,
+            participant=participant,
+            paper_used=participant_paper
+        )
+        res = self.teacher.get_detailed_salary_for_period(
+            unit_date, unit_date)
+        self.assertEqual(
+            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            MIN_TEACHERS_SALARY
+        )
+
+    def test_multiple_participants(self):
+        unit_date = date(2019, 2, 10)
+        reg_class_name = 'Yoga'
+        paper_name = 'Maupa'
+        paper_price = 1000
+        one_time_price = 150
+        reg_class = RegularClass.objects.create(
+            name=reg_class_name,
+            start_date='2019-02-01',
+            one_time_price=one_time_price
+        )
+        class_unit = ClassUnit.objects.create(
+            regular_class=reg_class,
+            date=unit_date,
+            teacher=self.teacher
+        )
+        first_participant = Participant.objects.create(name='Oopyr')
+        second_participant = Participant.objects.create(name='Knoor')
+        paper = Paper.objects.create(
+            name=paper_name,
+            price=paper_price,
+            number_of_uses=1
+        )
+        participant_paper = ParticipantPaper.objects.create(
+            participant=first_participant,
+            paper=paper,
+            date_purchased='2019-02-01'
+        )
+        ClassParticipation.objects.create(
+            class_unit=class_unit,
+            participant=first_participant,
+            paper_used=participant_paper
+        )
+        ClassParticipation.objects.create(
+            class_unit=class_unit,
+            participant=second_participant,
+            paid_one_time_price=True
+        )
+        res = self.teacher.get_detailed_salary_for_period(
+            unit_date, unit_date)
+        self.assertEqual(
+            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            (paper_price + one_time_price)/2
         )
