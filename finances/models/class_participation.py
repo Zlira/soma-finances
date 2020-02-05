@@ -8,6 +8,7 @@ from .constants import ONE_TIME_PRICE_LABEL
 class ClassParticipation(models.Model):
     # TODO add a constraint that only paper_used or one time price is
     # filled out or use
+
     class_unit = models.ForeignKey(
         'ClassUnit', on_delete=models.CASCADE, verbose_name="заняття"
     )
@@ -19,7 +20,8 @@ class ClassParticipation(models.Model):
         ParticipantPaper, on_delete=models.PROTECT, blank=True, null=True,
         verbose_name="використаний папірець"
     )
-    paid_one_time_price = models.BooleanField('одноразовий внесок', default=False)
+    paid_one_time_price = models.BooleanField(
+        'одноразовий внесок', default=False)
 
     def __str__(self):
         return f'{self.participant} на {self.class_unit}'
@@ -28,8 +30,10 @@ class ClassParticipation(models.Model):
     def get_payment_method_expression(cls):
         # TODO maybe use one type: either strig or int
         return models.Case(
-            models.When(paid_one_time_price=True, then=models.Value(ONE_TIME_PRICE_LABEL)),
-            models.When(paper_used__isnull=False, then=models.F('paper_used__paper')),
+            models.When(paid_one_time_price=True,
+                        then=models.Value(ONE_TIME_PRICE_LABEL)),
+            models.When(paper_used__isnull=False,
+                        then=models.F('paper_used__paper')),
             default=models.Value(0)
         )
 

@@ -24,7 +24,6 @@ class ClassUnit(models.Model):
         verbose_name = 'Конкретне заняття'
         verbose_name_plural = 'Конкретні заняття'
 
-
     def __str__(self):
         return f'{self.regular_class} ({self.date})'
 
@@ -37,4 +36,3 @@ class ClassUnit(models.Model):
             .filter(class_unit=self, *filters)
         )
         return {item['payment_method']: item['count'] for item in payment_methods}
-
