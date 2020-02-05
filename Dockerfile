@@ -2,15 +2,15 @@
 # BUILDER #
 ###########
 
-FROM python:3.8-alpine as builder
+FROM python:3.8-slim-buster as builder
 
 WORKDIR /usr/src/app
 
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
 
-RUN apk update \
-    && apk add mariadb-dev gcc python3-dev musl-dev g++
+RUN apt-get update \
+    && apt-get -y install python3-dev libmariadbclient-dev gcc
 
 
 RUN pip install --upgrade pip
@@ -22,11 +22,11 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheel -r require
 # FINAL #
 #########
 
-FROM python:3.8-alpine
+FROM python:3.8-slim-buster
 
 WORKDIR /usr/src/app
 
-RUN apk update && apk add  mariadb-connector-c-dev libstdc++
+RUN apt-get update && apt-get -y install netcat mariadb-client
 COPY --from=builder /usr/src/app/wheel /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --upgrade pip
