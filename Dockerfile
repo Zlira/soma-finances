@@ -33,3 +33,5 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache /wheels/*
 
 COPY . /usr/src/app/
+
+ENTRYPOINT ["/usr/src/app/entrypoint.sh"]

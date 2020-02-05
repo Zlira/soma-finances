@@ -78,11 +78,11 @@ WSGI_APPLICATION = 'soma_finances.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'soma_finances',
-        'USER': 'soma_finances',
-        'PASSWORD': '',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'NAME': os.environ.get('SQL_DATABASE'),
+        'USER': os.environ.get('SQL_USER'),
+        'PASSWORD': os.environ.get('SQL_PASSWORD'),
+        'HOST': os.environ.get('SQL_HOST'),
+        'PORT': os.environ.get('SQL_PORT'),
         'OPTIONS': {'charset': 'utf8mb4'},
         'TEST': {
             'CHARSET': 'utf8mb4',
@@ -129,10 +129,3 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-
-try:
-    from .local_settings import *
-except ImportError:
-    print("NO LOCAL SETTINGS")
-    pass
