@@ -4,8 +4,7 @@ from django.test import TestCase
 
 from finances.models import Teacher,\
     RegularClass, ClassUnit, Participant,\
-    ClassParticipation, Paper, ParticipantPaper
-from finances.models.constants import MIN_TEACHERS_SALARY
+    ClassParticipation, Paper, ParticipantPaper, Constants
 
 # res['Йога']['мега папірець'][date(2019, 12, 1)]
 UNIT_SALARY_LABEL = 'всього за заняття'
@@ -26,14 +25,14 @@ class TestSalary(TestCase):
         reg_class_name = 'Yoga'
         reg_class = RegularClass.objects.create(
             name=reg_class_name, start_date='2019-02-01')
-        class_unit = ClassUnit.objects.create(regular_class=reg_class,
-                                              date=unit_date,
-                                              teacher=self.teacher)
+        ClassUnit.objects.create(regular_class=reg_class,
+                                 date=unit_date,
+                                 teacher=self.teacher)
         res = self.teacher.get_detailed_salary_for_period(
             unit_date, unit_date)
         self.assertEqual(
             res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
-            MIN_TEACHERS_SALARY
+            Constants.get_min_teachers_salary()
         )
 
     def test_onetime_price(self):
@@ -209,7 +208,7 @@ class TestSalary(TestCase):
     def test_min_salary(self):
         unit_date = date(2019, 2, 10)
         reg_class_name = 'Yoga'
-        paper_price = MIN_TEACHERS_SALARY/2
+        paper_price = Constants.get_min_teachers_salary()/2
         paper_name = 'Maupa'
         reg_class = RegularClass.objects.create(
             name=reg_class_name,
@@ -240,7 +239,7 @@ class TestSalary(TestCase):
             unit_date, unit_date)
         self.assertEqual(
             res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
-            MIN_TEACHERS_SALARY
+            Constants.get_min_teachers_salary()
         )
 
     def test_multiple_participants(self):

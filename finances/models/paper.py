@@ -1,6 +1,6 @@
 from django.db import models
 
-from .constants import MIN_ONE_TIME_PAPER_PRICE
+from .default_constants import Constants
 
 
 class Paper(models.Model):
@@ -23,7 +23,8 @@ class Paper(models.Model):
     def get_one_time_price_expression(cls):
         return models.Case(
             models.When(number_of_uses__isnull=True,
-                        then=models.Value(MIN_ONE_TIME_PAPER_PRICE)),
+                        then=models.Value(
+                            Constants.get_min_one_time_paper_price())),
             default=models.F('price') / models.F('number_of_uses'),
             output_field=models.FloatField()
         )
@@ -32,5 +33,5 @@ class Paper(models.Model):
         return (
             self.price / self.number_of_uses
             if self.number_of_uses
-            else MIN_ONE_TIME_PAPER_PRICE
+            else Constants.get_min_one_time_paper_price()
         )
