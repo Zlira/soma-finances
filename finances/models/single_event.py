@@ -12,5 +12,9 @@ class SingleEvent(models.Model):
         verbose_name = 'Одноразова подія'
         verbose_name_plural = 'Одноразові події'
 
+    def overall_sum(self):
+        return self.admission_sum + self.bar_sum
+    overall_sum.short_description = 'Загалом'
+
     def __str__(self):
         return f'{self.name} ({self.date})'

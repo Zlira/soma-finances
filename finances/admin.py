@@ -105,6 +105,8 @@ class TeacherAdmin(admin.ModelAdmin):
 class ParticipantAdmin(admin.ModelAdmin):
     inlines = (AddParticipantPaperInline, ParticipantPaperInline, )
     search_fields = ['name']
+    list_display = ('name', 'date_created', 'email_sent')
+    list_editable = ('email_sent',)
 
 
 class ClassUnitAmdin(admin.ModelAdmin):
@@ -123,7 +125,7 @@ class DonationAdmin(admin.ModelAdmin):
 
 
 class SingleEventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'date', 'admission_sum', 'bar_sum')
+    list_display = ('name', 'date', 'admission_sum', 'bar_sum', 'overall_sum')
 
 
 class ExpenseAdmin(admin.ModelAdmin):

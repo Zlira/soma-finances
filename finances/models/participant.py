@@ -9,9 +9,11 @@ class Participant(models.Model):
     # TODO distingiush between several people with the same name
     name = models.CharField("ім'я", max_length=260)
     papers = models.ManyToManyField(Paper, through='ParticipantPaper')
-    date_created = models.DateField('дата першого знаяття', auto_now=True)
-    phone_number = PhoneNumberField(verbose_name='номер телефону', region="UA", blank=True, null=True)
+    date_created = models.DateField('дата реєстрації', auto_now=True)
+    phone_number = PhoneNumberField(
+        verbose_name='номер телефону', region="UA", blank=True, null=True)
     email = models.EmailField('електронна адреса', blank=True, null=True)
+    email_sent = models.BooleanField('листа надіслано', default=False)
     # TODO how did you learn about us
 
     class Meta:
@@ -20,4 +22,3 @@ class Participant(models.Model):
 
     def __str__(self):
         return self.name
-
