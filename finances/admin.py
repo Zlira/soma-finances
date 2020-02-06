@@ -5,7 +5,7 @@ import pandas as pd
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
-    ClassUnit, Donation, SingleEvent, Expense
+    ClassUnit, Donation, SingleEvent, Expense, Constants
 )
 from .forms import AddParticipantPaperForm
 
@@ -22,6 +22,7 @@ class AddParticipantPaperInline(admin.StackedInline):
     extra = 1
     max_num = 1
     # TODO add the ability to set price (defualt + donation)
+
     class Media:
         js = ('AddParticipantPaper.js', )
 
@@ -70,7 +71,8 @@ class ClassParticipationInline(admin.TabularInline):
 
 class PaperAdmin(admin.ModelAdmin):
     model = Teacher
-    fields = ('name', 'days_valid', 'number_of_uses', ('price', 'one_time_price'))
+    fields = ('name', 'days_valid', 'number_of_uses',
+              ('price', 'one_time_price'))
     readonly_fields = ('one_time_price', )
 
     def one_time_price(self, obj):
@@ -129,6 +131,11 @@ class ExpenseAdmin(admin.ModelAdmin):
     list_filter = ('category', )
 
 
+class ConstantsAdmin(admin.ModelAdmin):
+    list_display = ('name', 'value', 'description')
+    actions = None
+
+
 admin.site.register(ClassUnit, ClassUnitAmdin)
 admin.site.register(Paper, PaperAdmin)
 admin.site.register(Teacher, TeacherAdmin)
@@ -137,3 +144,4 @@ admin.site.register(Participant, ParticipantAdmin)
 admin.site.register(Donation, DonationAdmin)
 admin.site.register(SingleEvent, SingleEventAdmin)
 admin.site.register(Expense, ExpenseAdmin)
+admin.site.register(Constants, ConstantsAdmin)

@@ -5,7 +5,8 @@ from django.db import models
 
 import pandas as pd
 
-from .constants import ONE_TIME_PRICE_LABEL, MIN_TEACHERS_SALARY
+from .constants import ONE_TIME_PRICE_LABEL
+from .default_constants import Constants
 from .paper import Paper
 from .class_unit import ClassUnit
 
@@ -68,7 +69,8 @@ class Teacher(models.Model):
             ).fillna(0).astype(int)
             unit_salary = (salary_df * prices_df.loc['price']).sum(axis=1) / 2
             unit_salary = unit_salary.where(
-                unit_salary >= MIN_TEACHERS_SALARY, MIN_TEACHERS_SALARY
+                unit_salary >= Constants.get_min_teachers_salary(
+                ), Constants.get_min_teachers_salary()
             )
             salary_df.columns = [prices_df.loc['name', col]
                                  for col in salary_df]

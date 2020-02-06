@@ -1,4 +1,3 @@
-from django.db import connection
 from django.db.models import Value, CharField
 from django.db.models.functions import Concat
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
@@ -25,7 +24,6 @@ def participant_papers(request):
                )
            )
            )
-    qs = connection.queries
     return JsonResponse({'participantPapers': list(res)})
 
 
