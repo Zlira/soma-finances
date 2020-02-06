@@ -1,6 +1,6 @@
 from django.db.models import(
     Value, CharField, F, DurationField,
-    ExpressionWrapper, fields, Count
+    ExpressionWrapper, fields, Count, Min
 )
 from django.db.models.functions import Cast
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
@@ -18,7 +18,8 @@ def participant_papers(request):
         return HttpResponseBadRequest('participant_id is required')
     # TODO check if participant exists
     days_in_use = ExpressionWrapper(
-        Cast(date.today(), fields.DateField()) - F('date_purchased'),
+        Cast(date.today(), fields.DateField()) -
+        Min('classparticipation__class_unit__date'),
         output_field=fields.DurationField()
     )
     res = (ParticipantPaper.objects
@@ -36,8 +37,12 @@ def participant_papers(request):
                times_used=F('times_used')
            )
            )
+    print(res)
     for i in res:
-        i['days_in_use'] = i['days_in_use'].days
+        if i['days_in_use'] is None:
+            i['days_in_use'] = 0
+        else:
+            i['days_in_use'] = i['days_in_use'].days
     return JsonResponse({'participantPapers': list(res)})
 
 
