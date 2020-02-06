@@ -3,11 +3,30 @@
 from django.db import migrations
 
 
+MIN_TEACHERS_SALARY_DESCRIPTION = """
+Мінімальна винагорода, яку вчитель отримує за проведене заняття,
+не залежно від того, скільки учасників були присутніми.
+"""
+
+MIN_ONE_TIME_PAPER_PRICE_DESCIRPTION = """
+При обрахунку учительської винагороди за заняття за кожного учасника
+з папірцем нараховується (ціна папірця/дозволена кількість використань папірця/2) грн.
+Але мега папірець не має обмежень на кількість використань, тому для нього
+замість такої формули використовуємо значення цієї змінної поділене на два.
+"""
+
+
 def fill_constants(apps, schema_editor):
     Constants = apps.get_model('finances', 'Constants')
     Constants.objects.bulk_create([
-        Constants(name='MIN_ONE_TIME_PAPER_PRICE', value=70),
-        Constants(name='MIN_TEACHERS_SALARY', value=100)
+        Constants(
+            name='MIN_ONE_TIME_PAPER_PRICE', value=70,
+            description=MIN_ONE_TIME_PAPER_PRICE_DESCIRPTION,
+        ),
+        Constants(
+            name='MIN_TEACHERS_SALARY', value=100,
+            description=MIN_TEACHERS_SALARY_DESCRIPTION
+        )
     ])
 
 
