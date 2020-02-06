@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile.prod
+        command: gunicorn soma_finances.wsgi:application --bind 0.0.0.0:8001
+        volumes:
+            - static_volume:/home/app/web/static
+        expose:
+            - 8001
+        env_file:
+            - ./.env.dev
+        depends_on:
+            - db
+    db:
+        image: mariadb:10.4-bionic
+        ports:
+            - "3306:3306"
+        environment:
+            - MYSQL_ROOT_PASSWORD=password
+            - MYSQL_DATABASE=soma_finances
+            - MYSQL_USER=soma_finances
+            - MYSQL_PASSWORD=CjkmgfdUhfvgs
+        command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    nginx:
+        build: ./nginx
+        volumes:
+            - static_volume:/home/app/web/static
+        ports:
+            - 1337:80
+        depends_on:
+            - web
+
+volumes:
+    static_volume:

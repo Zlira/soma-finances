@@ -1,0 +1,54 @@
+###########
+# BUILDER #
+###########
+
+FROM python:3.8-slim-buster as builder
+
+WORKDIR /usr/src/app
+
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE 1
+
+RUN apt-get update \
+    && apt-get -y install python3-dev libmariadbclient-dev gcc
+
+
+RUN pip install --upgrade pip
+COPY ./requirements.txt /usr/src/app/requirements.txt
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheel -r requirements.txt
+
+
+#########
+# FINAL #
+#########
+
+FROM python:3.8-slim-buster
+
+# create directory for app user
+RUN mkdir -p /home/app
+
+# create the app user
+RUN groupadd -r app && useradd -r app -g app
+
+# create the appropriate directories
+ENV HOME=/home/app
+ENV APP_HOME=/home/app/web
+RUN mkdir $APP_HOME
+RUN mkdir $APP_HOME/static
+WORKDIR $APP_HOME
+
+
+RUN apt-get update && apt-get -y install netcat mariadb-client
+COPY --from=builder /usr/src/app/wheel /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+
+COPY ./entrypoint.sh $APP_HOME
+COPY . $APP_HOME
+
+RUN chown -R app:app $APP_HOME
+
+USER app
+
+ENTRYPOINT ["/home/app/web/entrypoint.sh"]
