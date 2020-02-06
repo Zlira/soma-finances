@@ -18,7 +18,8 @@ MIN_ONE_TIME_PAPER_PRICE_DESCIRPTION = """
 
 def fill_constants(apps, schema_editor):
     Constants = apps.get_model('finances', 'Constants')
-    Constants.objects.bulk_create([
+    db_alias = schema_editor.connection.alias
+    Constants.objects.using(db_alias).bulk_create([
         Constants(
             name='MIN_ONE_TIME_PAPER_PRICE', value=70,
             description=MIN_ONE_TIME_PAPER_PRICE_DESCIRPTION,
@@ -34,9 +35,9 @@ def reverse_fill_constants(apps, schema_editor):
     Constants = apps.get_model('finances', 'Constants')
     db_alias = schema_editor.connection.alias
     Constants.objects.using(db_alias).filter(
-        name='MIN_ONE_TIME_PAPER_PRICE', value=70).delete()
+        name='MIN_ONE_TIME_PAPER_PRICE').delete()
     Constants.objects.using(db_alias).filter(
-        name='MIN_TEACHERS_SALARY', value=100).delete()
+        name='MIN_TEACHERS_SALARY').delete()
 
 
 class Migration(migrations.Migration):
