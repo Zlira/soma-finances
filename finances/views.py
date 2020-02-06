@@ -1,6 +1,6 @@
 from django.db.models import(
     Value, CharField, F, DurationField,
-    ExpressionWrapper, fields, Count, Min
+    ExpressionWrapper, fields, Count, Min, Q
 )
 from django.db.models.functions import Cast
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
@@ -28,7 +28,11 @@ def participant_papers(request):
                days_in_use=days_in_use,
                times_used=Count('classparticipation')
            )
-           .filter(participant=participant_id)
+           .filter(
+               Q(paper__number_of_uses__gt=F('times_used')) |
+               Q(paper__number_of_uses__isnull=True),
+               participant=participant_id
+           )
            .select_related('participant', 'paper')
            .values(
                'id',
