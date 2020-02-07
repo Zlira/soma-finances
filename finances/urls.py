@@ -4,6 +4,9 @@ from . import views
 
 
 urlpatterns = [
-    path('participant_papers/', views.participant_papers, name='participant_papers'),
+    path(
+        'participant/<int:participant_id>/papers',
+        views.participant_papers, name='participant_papers'
+    ),
     path('paper/', views.paper, name="paper"),
 ]
