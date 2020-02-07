@@ -5,6 +5,7 @@ from django.test import TestCase
 from finances.models import Teacher,\
     RegularClass, ClassUnit, Participant,\
     ClassParticipation, Paper, ParticipantPaper, Constants
+from finances.accounting import get_detailed_teachers_salary_for_period
 
 # res['Йога']['мега папірець'][date(2019, 12, 1)]
 UNIT_SALARY_LABEL = 'всього за заняття'
@@ -16,23 +17,25 @@ class TestSalary(TestCase):
         self.teacher = Teacher.objects.create(name='Homer')
 
     def test_without_classes(self):
-        res = self.teacher.get_detailed_salary_for_period(
-            '2019-02-01', '2019-02-03')
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, '2019-02-01', '2019-02-03')
         self.assertDictEqual(res, {})
 
     def test_without_participants(self):
         unit_date = date(2019, 2, 10)
         reg_class_name = 'Yoga'
         reg_class = RegularClass.objects.create(
-            name=reg_class_name, start_date='2019-02-01')
+            name=reg_class_name, start_date='2019-02-01',
+            one_time_price=100,
+        )
         ClassUnit.objects.create(regular_class=reg_class,
                                  date=unit_date,
                                  teacher=self.teacher)
-        res = self.teacher.get_detailed_salary_for_period(
-            unit_date, unit_date)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, unit_date, unit_date)
+        # if nobody was present at the class techer gets nothing
         self.assertEqual(
-            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
-            Constants.get_min_teachers_salary()
+            res[reg_class_name][unit_date][UNIT_SALARY_LABEL], 0
         )
 
     def test_onetime_price(self):
@@ -55,10 +58,10 @@ class TestSalary(TestCase):
             participant=participant,
             paid_one_time_price=True
         )
-        res = self.teacher.get_detailed_salary_for_period(
-            unit_date, unit_date)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, unit_date, unit_date)
         self.assertEqual(
-            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            res[reg_class_name][unit_date][UNIT_SALARY_LABEL],
             reg_class_price/2
         )
 
@@ -82,12 +85,12 @@ class TestSalary(TestCase):
             class_unit=class_unit,
             participant=participant,
         )
-        res = self.teacher.get_detailed_salary_for_period(
-            date_before_class, date_before_class)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, date_before_class, date_before_class)
         self.assertEqual(res, {})
 
-        res = self.teacher.get_detailed_salary_for_period(
-            date_after_class, date_after_class)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, date_after_class, date_after_class)
         self.assertEqual(res, {})
 
     def test_other_teacher(self):
@@ -108,8 +111,8 @@ class TestSalary(TestCase):
             class_unit=class_unit,
             participant=participant,
         )
-        res = self.teacher.get_detailed_salary_for_period(
-            unit_date, unit_date)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, unit_date, unit_date)
         self.assertEqual(res, {})
 
     def test_paper(self):
@@ -118,7 +121,7 @@ class TestSalary(TestCase):
         paper_price = 1000
         paper_name = 'Maupa'
         reg_class = RegularClass.objects.create(
-            name=reg_class_name,
+            name=reg_class_name, one_time_price=100,
             start_date='2019-02-01',
         )
         class_unit = ClassUnit.objects.create(
@@ -142,10 +145,10 @@ class TestSalary(TestCase):
             participant=participant,
             paper_used=participant_paper
         )
-        res = self.teacher.get_detailed_salary_for_period(
-            unit_date, unit_date)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, unit_date, unit_date)
         self.assertEqual(
-            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            res[reg_class_name][unit_date][UNIT_SALARY_LABEL],
             paper_price/2
         )
 
@@ -156,11 +159,11 @@ class TestSalary(TestCase):
         paper_price = 1000
         paper_name = 'Maupa'
         first_reg_class = RegularClass.objects.create(
-            name=first_reg_class_name,
+            name=first_reg_class_name, one_time_price=100,
             start_date='2019-02-01',
         )
         second_reg_class = RegularClass.objects.create(
-            name=second_reg_class_name,
+            name=second_reg_class_name, one_time_price=100,
             start_date='2019-02-01',
         )
         first_class_unit = ClassUnit.objects.create(
@@ -194,14 +197,14 @@ class TestSalary(TestCase):
             participant=participant,
             paper_used=participant_paper
         )
-        res = self.teacher.get_detailed_salary_for_period(
-            unit_date, unit_date)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, unit_date, unit_date)
         self.assertEqual(
-            res[first_reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            res[first_reg_class_name][unit_date][UNIT_SALARY_LABEL],
             paper_price/2
         )
         self.assertEqual(
-            res[second_reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            res[second_reg_class_name][unit_date][UNIT_SALARY_LABEL],
             paper_price/2
         )
 
@@ -211,7 +214,7 @@ class TestSalary(TestCase):
         paper_price = Constants.get_min_teachers_salary()/2
         paper_name = 'Maupa'
         reg_class = RegularClass.objects.create(
-            name=reg_class_name,
+            name=reg_class_name, one_time_price=100,
             start_date='2019-02-01',
         )
         class_unit = ClassUnit.objects.create(
@@ -235,10 +238,10 @@ class TestSalary(TestCase):
             participant=participant,
             paper_used=participant_paper
         )
-        res = self.teacher.get_detailed_salary_for_period(
-            unit_date, unit_date)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, unit_date, unit_date)
         self.assertEqual(
-            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            res[reg_class_name][unit_date][UNIT_SALARY_LABEL],
             Constants.get_min_teachers_salary()
         )
 
@@ -280,9 +283,9 @@ class TestSalary(TestCase):
             participant=second_participant,
             paid_one_time_price=True
         )
-        res = self.teacher.get_detailed_salary_for_period(
-            unit_date, unit_date)
+        res = get_detailed_teachers_salary_for_period(
+            self.teacher, unit_date, unit_date)
         self.assertEqual(
-            res[reg_class_name][UNIT_SALARY_LABEL][unit_date],
+            res[reg_class_name][unit_date][UNIT_SALARY_LABEL],
             (paper_price + one_time_price)/2
         )

@@ -1,14 +1,12 @@
 from django.contrib import admin
 
-import pandas as pd
-
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
     ClassUnit, Donation, SingleEvent, Expense, Constants
 )
 from .forms import AddParticipantPaperForm
-
+from .accounting import get_detailed_teachers_salary_for_period
 
 class AddParticipantPaperInline(admin.StackedInline):
     model = Participant.papers.through
@@ -88,8 +86,8 @@ class TeacherAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
 
         teacher = Teacher.objects.get(id=object_id)
-        salary_details = teacher.get_detailed_salary_for_period(
-            '2019-12-01', '2019-12-15'
+        salary_details = get_detailed_teachers_salary_for_period(
+            teacher, '2019-12-01', '2019-12-15'
         )
         unit_salary_label = 'всього за заняття'
         salary_details = {

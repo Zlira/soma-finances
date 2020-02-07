@@ -30,8 +30,6 @@ class ClassParticipation(models.Model):
     def get_payment_method_expression(cls):
         # TODO maybe use one type: either strig or int
         return models.Case(
-            models.When(paid_one_time_price=True,
-                        then=models.Value(ONE_TIME_PRICE_LABEL)),
             models.When(paper_used__isnull=False,
                         then=models.F('paper_used__paper')),
             default=models.Value(0)
