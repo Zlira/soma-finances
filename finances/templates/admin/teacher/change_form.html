@@ -1,11 +1,46 @@
 {% extends 'admin/change_form.html' %}
+{% load soma_extras %}
+
+{% block extrahead %}
+  {{ block.super }}
+  {{ date_range_form.media }}
+{% endblock %}
 
 
 {%block content%}
   {{ block.super }}
-  <p>Зарплата за 1-15 грудня: {{salary}}</p>
-  {% for class_name, details in salary_details.items %}
-    <h3>{{class_name}}</h3>
-    {{details|safe}}
+  <h2>Зарплата за період</h2>
+  <form method="get" path="{{ request.get_full_path }}">
+     {{ date_range_form }}
+    <input type="submit" value="Оновити"/>
+  </form>
+
+  {% for class_ in salary %}
+    <table>
+      <caption>{{ class_.name }}: {{ class_.sum_teachers_share }} грн</caption>
+      <thead>
+        <tr>
+          <td>Дата</td>
+          {% for payment_method in class_.possible_payments.values %}
+            <td>{{ payment_method.name }}</td>
+          {% endfor %}
+          <td>Всього</td>
+        </tr>
+      </thead>
+      <tbody>
+        {% for unit_payments in class_.unit_payments %}
+          <tr>
+            <td>{{unit_payments.class_unit.date}}</td>
+            {% for payment_id in class_.possible_payments %}
+              <td>{{ unit_payments.payment_counts|get_item:payment_id }}</td>
+            {% endfor %}
+            <td>{{ unit_payments.sum_teachers_share }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+
   {% endfor %}
+
 {% endblock %}

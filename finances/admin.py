@@ -1,12 +1,15 @@
 from django.contrib import admin
+from django.shortcuts import get_object_or_404
 
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
     ClassUnit, Donation, SingleEvent, Expense, Constants
 )
-from .forms import AddParticipantPaperForm
-from .accounting import get_detailed_teachers_salary_for_period
+from .forms import AddParticipantPaperForm, DateRangeForm
+from .accounting import get_detailed_teachers_salary_for_period, \
+    default_salary_range
+
 
 class AddParticipantPaperInline(admin.StackedInline):
     model = Participant.papers.through
@@ -79,22 +82,28 @@ class PaperAdmin(admin.ModelAdmin):
 
 
 class TeacherAdmin(admin.ModelAdmin):
+    class Media:
+        js = ('TeacherSalary.js', )
     model = Teacher
     change_form_template = 'admin/teacher/change_form.html'
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
-
-        teacher = Teacher.objects.get(id=object_id)
-        salary_details = get_detailed_teachers_salary_for_period(
-            teacher, '2019-12-01', '2019-12-15'
+        form_data = request.GET
+        if not form_data:
+            form_data = default_salary_range()._asdict()
+        date_range_from = DateRangeForm(form_data)
+        if not date_range_from.is_valid():
+            pass
+            # TODO handle invalid form data (through messages?)
+        teacher = get_object_or_404(Teacher, pk=object_id)
+        salary = get_detailed_teachers_salary_for_period(
+            teacher, **date_range_from.cleaned_data
         )
-        unit_salary_label = 'всього за заняття'
-        salary_details = {
-            f'{class_name}: {df[unit_salary_label].sum()} грн': df.to_html()
-            for class_name, df in salary_details.items()
-        }
-        extra_context['salary_details'] = salary_details
+
+        extra_context['date_range_form'] = DateRangeForm(form_data)
+        extra_context['salary'] = salary
+
         return super().change_view(
             request, object_id, form_url, extra_context=extra_context,
         )

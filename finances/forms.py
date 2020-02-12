@@ -1,6 +1,21 @@
-from django.forms import ModelForm, IntegerField, ValidationError
+from datetime import date
+
+from django.forms import Form, ModelForm, DateField, \
+    IntegerField, ValidationError
+from django.contrib.admin.widgets import AdminDateWidget
 
 from .models import ParticipantPaper, Paper, Donation
+
+
+class DateRangeForm(Form):
+    start_date = DateField(
+        label='початок періоду',
+        widget=AdminDateWidget(),
+    )
+    end_date = DateField(
+        label="кінець періоду",
+        widget=AdminDateWidget(),
+    )
 
 
 class AddParticipantPaperForm(ModelForm):

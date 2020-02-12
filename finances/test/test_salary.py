@@ -5,10 +5,49 @@ from django.test import TestCase
 from finances.models import Teacher,\
     RegularClass, ClassUnit, Participant,\
     ClassParticipation, Paper, ParticipantPaper, Constants
-from finances.accounting import get_detailed_teachers_salary_for_period
+from finances.accounting import get_detailed_teachers_salary_for_period, \
+    PaymentTypes
 
-# res['Йога']['мега папірець'][date(2019, 12, 1)]
+
 UNIT_SALARY_LABEL = 'всього за заняття'
+
+
+class TestPaymentTypes(TestCase):
+    def test_retrieves_paper_payments(self):
+        paper_1 = Paper.objects.create(
+            name='name 1', price=8, number_of_uses=2
+        )
+        paper_2 = Paper.objects.create(
+            name='name 2', price=16, number_of_uses=2
+        )
+        pt = PaymentTypes()
+        payments = pt.paper_payments
+        self.assertEqual(len(payments), 2)
+
+        payment_1 = payments[paper_1.id]
+        self.assertEqual(
+            payment_1.teachers_share,
+            paper_1.price / paper_1.number_of_uses / 2
+        )
+        self.assertEqual(payment_1.name, paper_1.name)
+
+    def test_includes_regular_class_price(self):
+        Paper.objects.create(
+            name='name 1', price=8, number_of_uses=2
+        )
+        class_ = RegularClass.objects.create(
+            name='how not to suck at testing',
+            one_time_price=20, start_date=date.today()
+        )
+        pt = PaymentTypes()
+        payments = pt.get_for_class(class_)
+
+        self.assertEqual(len(payments), 2)
+        one_time_payment = payments[0]
+        self.assertEqual(
+            one_time_payment.teachers_share,
+            class_.one_time_price / 2
+        )
 
 
 class TestSalary(TestCase):

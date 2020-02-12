@@ -2,11 +2,17 @@ from django.db.models import Value, CharField
 from django.db.models.functions import Concat
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_safe
+from django.forms.fields import DateField
+from django.forms import ValidationError
 
-from .models import ParticipantPaper, Paper
+from .models import ParticipantPaper, Paper, Teacher
+from .accounting import get_detailed_teachers_salary_for_period
+from .forms import DateRangeForm
 
 
-# TODO add authentication
+# TODO should we use something like ajax_required decorator
+
 
 def participant_papers(request):
     participant_id = request.GET.get('participant_id')
@@ -38,3 +44,18 @@ def paper(request):
     return JsonResponse(
         {field: getattr(paper, field) for field in fields}
     )
+
+
+# TODO delete this or fix date isoformat
+@require_safe
+def detialed_teachers_salary(request, teacher_id):
+    if not request.user.is_authenticated:
+        return HttpResponse('Unauthorized', status=401)
+    query_str_form = DateRangeForm(request.GET)
+    if not query_str_form.is_valid():
+        return JsonResponse(query_str_form.errors, status=400)
+    teacher = get_object_or_404(Teacher, id=teacher_id)
+    detailed_salary = get_detailed_teachers_salary_for_period(
+        teacher, **query_str_form.cleaned_data
+    )
+    return JsonResponse(detailed_salary)
