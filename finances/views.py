@@ -44,18 +44,3 @@ def paper(request):
     return JsonResponse(
         {field: getattr(paper, field) for field in fields}
     )
-
-
-# TODO delete this or fix date isoformat
-@require_safe
-def detialed_teachers_salary(request, teacher_id):
-    if not request.user.is_authenticated:
-        return HttpResponse('Unauthorized', status=401)
-    query_str_form = DateRangeForm(request.GET)
-    if not query_str_form.is_valid():
-        return JsonResponse(query_str_form.errors, status=400)
-    teacher = get_object_or_404(Teacher, id=teacher_id)
-    detailed_salary = get_detailed_teachers_salary_for_period(
-        teacher, **query_str_form.cleaned_data
-    )
-    return JsonResponse(detailed_salary)
