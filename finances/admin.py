@@ -83,7 +83,7 @@ class PaperAdmin(admin.ModelAdmin):
 
 class TeacherAdmin(admin.ModelAdmin):
     class Media:
-        js = ('TeacherSalary.js', )
+        css = {'all': ('css/teachers_salary.css', )}
     model = Teacher
     change_form_template = 'admin/teacher/change_form.html'
 

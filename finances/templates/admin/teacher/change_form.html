@@ -11,13 +11,13 @@
   {{ block.super }}
   <h2>Зарплата за період</h2>
   <form method="get" path="{{ request.get_full_path }}">
-     {{ date_range_form }}
+     {{ date_range_form.as_p }}
     <input type="submit" value="Оновити"/>
   </form>
 
   {% for class_ in salary %}
-    <table class="table mt-4">
-      <caption>{{ class_.name }}: {{ class_.sum_teachers_share }} грн</caption>
+    <table class="salary-table">
+      <caption class="salary-table__class-name">{{ class_.name }}: {{ class_.sum_teachers_share }} грн</caption>
       <thead>
         <tr>
           <th scope="col">Дата</th>
@@ -30,7 +30,7 @@
       <tbody>
         {% for unit_payments in class_.unit_payments %}
           <tr>
-            <th scope="row">{{unit_payments.class_unit.date}}</th>
+            <th scope="row">{{unit_payments.class_unit.date|date:"Y-m-d"}}</th>
             {% for payment_id in class_.possible_payments %}
               <td>{{ unit_payments.payment_counts|get_item:payment_id }}</td>
             {% endfor %}

@@ -1,0 +1,9 @@
+.salary-table {
+    margin-top: 30px;
+}
+
+.salary-table__class-name {
+    font-size: 1.3em;
+    padding: 10px;
+    text-align: left;
+}
