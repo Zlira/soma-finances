@@ -16,21 +16,21 @@
   </form>
 
   {% for class_ in salary %}
-    <table>
+    <table class="table mt-4">
       <caption>{{ class_.name }}: {{ class_.sum_teachers_share }} грн</caption>
       <thead>
         <tr>
-          <td>Дата</td>
+          <th scope="col">Дата</th>
           {% for payment_method in class_.possible_payments.values %}
-            <td>{{ payment_method.name }}</td>
+            <th scope="col">{{ payment_method.name }}</th>
           {% endfor %}
-          <td>Всього</td>
+          <th scope="col">Всього</th>
         </tr>
       </thead>
       <tbody>
         {% for unit_payments in class_.unit_payments %}
           <tr>
-            <td>{{unit_payments.class_unit.date}}</td>
+            <th scope="row">{{unit_payments.class_unit.date}}</th>
             {% for payment_id in class_.possible_payments %}
               <td>{{ unit_payments.payment_counts|get_item:payment_id }}</td>
             {% endfor %}

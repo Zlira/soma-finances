@@ -63,6 +63,8 @@ class ClassUnitPayments:
         share = 0
         for payment_id, payment_type in possible_payments.items():
             share += self.payment_counts.get(payment_id, 0) * payment_type.teachers_share
+        if share == 0:
+            return share
         return share if share > self.min_salary else self.min_salary
 
 
