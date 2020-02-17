@@ -1,12 +1,16 @@
+from django.contrib import messages
 from django.db.models import Value, CharField
 from django.db.models.functions import Concat
-from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
-from django.shortcuts import get_object_or_404
-from django.views.decorators.http import require_safe
 from django.forms.fields import DateField
 from django.forms import ValidationError
+from django.http import JsonResponse, HttpResponseBadRequest, \
+    HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_safe, require_POST
+from django.utils.safestring import mark_safe
+from django.urls import reverse
 
-from .models import ParticipantPaper, Paper, Teacher
+from .models import ParticipantPaper, Paper, Teacher, Expense
 from .accounting import get_detailed_teachers_salary_for_period
 from .forms import DateRangeForm
 
@@ -44,3 +48,50 @@ def paper(request):
     return JsonResponse(
         {field: getattr(paper, field) for field in fields}
     )
+
+
+@require_POST
+def teachers_salary(request, teacher_id):
+    # TODO replace this with a decorator
+    if not request.user.is_authenticated:
+        return HttpResponse('Unauthorized', status=401)
+    form = DateRangeForm(request.POST)
+    if not form.is_valid():
+        return HttpResponse(form.errors, status=400)
+    start_date = form.cleaned_data['start_date']
+    end_date = form.cleaned_data['end_date']
+
+    teacher = get_object_or_404(Teacher, pk=teacher_id)
+    salary_report = get_detailed_teachers_salary_for_period(
+        teacher, start_date, end_date
+    )
+    salary = sum(class_.sum_teachers_share() for class_ in salary_report)
+    if salary <= 0:
+        messages.warning(
+            request,
+            "Винагорода становила 0 грн, тому не записана"
+        )
+    else:
+        description = (
+            f'Винагорода для {teacher.name} за {start_date} - {end_date}'
+        )
+        expense = Expense.objects.create(
+            category=Expense.FEES_CAT,
+            amount=salary,
+            description=description
+        )
+        # TODO get admin urls from model
+        expense_url = reverse(
+            'admin:finances_expense_change', args=[expense.id]
+        )
+        messages.info(
+            request,
+            mark_safe(f'<a href="{expense_url}">Винагорода</a> збережена!')
+        )
+
+    # TODO or maybe redirect to the expense page?
+    redirect_url = (
+        reverse('admin:finances_teacher_change', args=[teacher.id]) +
+        f'?start_date={start_date.isoformat()}&end_date={end_date.isoformat()}'
+    )
+    return HttpResponseRedirect(redirect_url)

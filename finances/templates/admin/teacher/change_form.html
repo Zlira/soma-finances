@@ -10,14 +10,14 @@
 {%block content%}
   {{ block.super }}
   <h2>Зарплата за період</h2>
-  <form method="get" path="{{ request.get_full_path }}">
+  <form method="get" action="{{ request.get_full_path }}">
      {{ date_range_form.as_p }}
     <input type="submit" value="Оновити"/>
   </form>
 
   {% for class_ in salary %}
     <table class="salary-table">
-      <caption class="salary-table__class-name">{{ class_.name }}: {{ class_.sum_teachers_share }} грн</caption>
+      <caption class="salary-table__class-name">{{ class_.name }}: {{ class_.sum_teachers_share|floatformat:2 }} грн</caption>
       <thead>
         <tr>
           <th scope="col">Дата</th>
@@ -34,7 +34,7 @@
             {% for payment_id in class_.possible_payments %}
               <td>{{ unit_payments.payment_counts|get_item:payment_id }}</td>
             {% endfor %}
-            <td>{{ unit_payments.sum_teachers_share }}</td>
+            <td>{{ unit_payments.sum_teachers_share|floatformat:2 }}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -42,5 +42,15 @@
     </table>
 
   {% endfor %}
+
+  <p class="total-salary">Всього за період {{total|floatformat:2}} грн</p>
+  <form name="save-salary" action="{% url 'teachers_salary' teacher_id=object_id %}" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="start_date"
+      value="{{date_range_form.cleaned_data.start_date.isoformat}}"/>
+    <input type="hidden" name="end_date"
+      value="{{date_range_form.cleaned_data.end_date.isoformat}}"/>
+    <input type="submit" value="Записати винагороду"/>
+  </form>
 
 {% endblock %}

@@ -1,10 +1,14 @@
 from datetime import date
+from unittest.mock import patch, MagicMock
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 
 from finances.models import Teacher,\
     RegularClass, ClassUnit, Participant,\
-    ClassParticipation, Paper, ParticipantPaper, Constants
+    ClassParticipation, Paper, ParticipantPaper, \
+    Constants, Expense
 from finances.accounting import get_detailed_teachers_salary_for_period, \
     PaymentTypes
 
@@ -48,7 +52,7 @@ class TestPaymentTypes(TestCase):
         )
 
 
-class TestSalary(TestCase):
+class TestSalaryReport(TestCase):
 
     def create_class_and_unit(
         self, class_name, unit_date, one_time_price=100,
@@ -268,3 +272,87 @@ class TestSalary(TestCase):
         self.assertEqual(
             res[0].sum_teachers_share(), (paper_price + one_time_price)/2
         )
+
+
+class TestSaveSalary(TestCase):
+
+    def set_up_salary_report_mock(self, mock, total_salary=None):
+        if total_salary is None:
+            total_salary = self.total_salary
+        mock_report_payments = MagicMock()
+        mock_report_payments.sum_teachers_share = MagicMock(
+            return_value=total_salary
+        )
+        mock.return_value = [mock_report_payments]
+        return mock
+
+    def make_request(self, start_date=None, end_date=None):
+        start_date = start_date or date(2020, 1, 1)
+        end_date = end_date or date(2020, 1, 15)
+        return self.client.post(
+            self.salary_url, data={
+                'start_date': start_date, 'end_date': end_date
+            }
+        )
+
+    def setUp(self):
+        self.total_salary = 300
+        self.teacher = Teacher.objects.create(name="Sensei")
+        self.salary_url = reverse(
+            'teachers_salary', kwargs={"teacher_id": self.teacher.id}
+        )
+
+        User = get_user_model()
+        User.objects.create_user('me', 'my@email.com', 'my_password')
+        self.client.login(username='me', password='my_password')
+
+    def test_access_forbiden_to_unauthorized_users(self):
+        self.client.logout()
+        unauthorized_response = self.client.post(self.salary_url)
+        self.assertEqual(unauthorized_response.status_code, 401)
+
+    def test_returns_bad_request_if_no_dates(self):
+        unauthorized_response = self.client.post(self.salary_url)
+        self.assertEqual(unauthorized_response.status_code, 400)
+
+    @patch('finances.views.get_detailed_teachers_salary_for_period')
+    def test_redirects_to_teachers_admin_page(self, salary_report_mock):
+        self.set_up_salary_report_mock(salary_report_mock)
+
+        start_date=date(2020, 1, 1)
+        end_date=date(2020, 1, 15)
+        valid_response = self.make_request()
+
+        self.assertEqual(valid_response.status_code, 302)
+        self.assertEqual(
+            valid_response.url,
+            (reverse('admin:finances_teacher_change', args=[self.teacher.id]) +
+             f'?start_date={start_date.isoformat()}&end_date={end_date.isoformat()}')
+        )
+
+    @patch('finances.views.get_detailed_teachers_salary_for_period')
+    def test_creates_expense_entry_for_teacher(self, salary_report_mock):
+        self.set_up_salary_report_mock(salary_report_mock)
+
+        response = self.make_request()
+
+        self.assertEqual(response.status_code, 302)
+        # TODO is the entry guaranteed to be the last one?
+        expense_entry = Expense.objects.last()
+        self.assertIsNotNone(expense_entry)
+        self.assertEqual(expense_entry.date, date.today())
+        self.assertEqual(expense_entry.amount, self.total_salary)
+        self.assertIn(self.teacher.name, expense_entry.description)
+        self.assertEqual(expense_entry.category, Expense.FEES_CAT)
+        # TODO test the message
+
+    @patch('finances.views.get_detailed_teachers_salary_for_period')
+    def test_doesnt_create_expense_entry_if_salary_is_0(self, set_up_salary_report_mock):
+        self.set_up_salary_report_mock(set_up_salary_report_mock, 0)
+
+        expense_count_before = Expense.objects.count()
+        response = self.make_request()
+
+        self.assertEqual(response.status_code, 302)
+        expense_count_after = Expense.objects.count()
+        self.assertEqual(expense_count_before, expense_count_after)

@@ -103,6 +103,7 @@ class TeacherAdmin(admin.ModelAdmin):
 
         extra_context['date_range_form'] = DateRangeForm(form_data)
         extra_context['salary'] = salary
+        extra_context['total'] = sum(class_.sum_teachers_share() for class_ in salary)
 
         return super().change_view(
             request, object_id, form_url, extra_context=extra_context,

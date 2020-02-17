@@ -15,7 +15,7 @@ class PaperTestCase(TestCase):
         User = get_user_model()
         User.objects.create_user(user_name, user_email, user_password)
 
-    def test_denies_unauthorised_access(self):
+    def test_denies_unauthorized_access(self):
         response = self.client.get(reverse("paper"))
         self.assertEqual(response.status_code, 401)
 
