@@ -15,7 +15,7 @@ from django.views.decorators.http import require_safe, require_POST
 from django.utils.safestring import mark_safe
 from django.urls import reverse
 
-from .models import ParticipantPaper, Paper, Teacher, Expense
+from .models import Participant, ParticipantPaper, Paper, Teacher, Expense
 from .accounting import get_detailed_teachers_salary_for_period
 from .forms import DateRangeForm
 

@@ -65,6 +65,7 @@ class ClassParticipationInline(admin.TabularInline):
     model = ClassUnit.participants.through
     autocomplete_fields = ('participant', )
     extra = 1
+    classes = ('class-participation-fieldset', )
 
     verbose_name = 'Відвідування заняття'
     verbose_name_plural = 'Відвідування заняття'
@@ -121,7 +122,7 @@ class ClassUnitAmdin(admin.ModelAdmin):
     # TODO add number of participants and teachers name to listview
     # TODO add filter by teachers
     class Media:
-        js = ('ParticipantPapers.js', )
+        js = ('ClassParticipationFilterPaper.js', )
 
     list_display = ('regular_class', 'date')
     list_filter = ('regular_class', )
