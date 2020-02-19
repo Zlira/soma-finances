@@ -19,7 +19,9 @@ class ParticipantPaper(models.Model):
     # price = models.IntegerField("ціна")
     def __str__(self):
         # TODO does this issue new db query? should select_releted be used?
-        return f"{self.paper.name} ({self.get_number_of_uses()} використання, {self.participant.name})"
+        first_use = self.get_first_use_date()
+        days_in_use = 0 if not first_use else (date.today() - first_use).days
+        return f"{self.paper.name} (використовується {days_in_use} днів, {self.get_number_of_uses()} раз)"
 
     def get_number_of_uses(self):
         return self.classparticipation_set.count()

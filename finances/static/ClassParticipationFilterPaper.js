@@ -1,3 +1,16 @@
+// DONE don't update options on every focus
+// DONE add listeners to new fieldsets
+
+// TODO make selection 100% wide
+// TODO limit js only to the change page (also for adding participant papers)
+// TODO options should be at the select box not jumping outside
+// TODO when updating options keep the selected one?
+// TODO set paper used to none if the participant is changed
+// TODO remove original choices
+// TODO check if paper belongs to a participant after save
+// TODO after all of this is complete deploy to pythonanywhere
+
+
 async function fetchParticipantsPapers(participant_id) {
   const protocol = window.location.protocol;
   const host = window.location.host;
@@ -28,12 +41,18 @@ class ParticipationForm {
     this.paperUsedField = this.node.querySelector(
       '.field-paper_used select'
     )
+    // this.updatePaperOptions()
   }
 
-  addParticipantChangeListener = () => {
-    django.jQuery('#' + this.participantField.id).on(
-      'select2:select', (e) => console.log(e.params.data)
+  getCurrentParticipantId = () => {
+    const participantData = (
+      django.jQuery('#' + this.participantField.id)
+      .select2('data')
     )
+    if (participantData.length > 0) {
+      return participantData[0].id
+    }
+    return null
   }
 
   addPaperFieldOnFocusListener = () => {
@@ -41,12 +60,20 @@ class ParticipationForm {
   }
 
   updatePaperOptions = () => {
-    const participantId = django.jQuery('#' + this.participantField.id).select2('data')[0]['id']
+    const participantId = this.getCurrentParticipantId()
+    if (participantId === this.paperOptionsSetFor) {
+      return
+    }
+    if (!participantId) {
+      this.paperUsedField.innerHTML = constructOptions([])
+      this.paperOptionsSetFor = participantId
+      return
+    }
     fetchParticipantsPapers(participantId).then(
       papers => {
         const options = constructOptions(papers['participantPapers'])
         this.paperUsedField.innerHTML = options
-        console.log(options)
+        this.paperOptionsSetFor = participantId
       }
     )
   }
@@ -63,24 +90,30 @@ function* getFormsFromParticipationSet(fieldset) {
   }
 }
 
+function initParticipantForm(formNode) {
+  const form = new ParticipationForm(formNode)
+  form.addPaperFieldOnFocusListener()
+  return form
+}
 
 function selectClassParticipationSets() {
   const fieldsetClass = 'class-participation-fieldset'
   const fieldset = document.getElementsByClassName(fieldsetClass)[0]
   const forms = []
   for (const formNode of getFormsFromParticipationSet(fieldset)) {
-    forms.push(new ParticipationForm(formNode))
-  }
-
-  for (const form of forms) {
-    form.addPaperFieldOnFocusListener()
-    form.addParticipantChangeListener()
+    initParticipantForm(formNode)
   }
 }
 
 function main() {
   selectClassParticipationSets()
-  // django.jQuery(document).on('formset:added', () => console.log('added'))
+  django.jQuery(document).on(
+    'formset:added',
+    (e, row, formsetName) => {
+      if (formsetName === 'classparticipation_set') {
+        initParticipantForm(row[0])
+      }
+    })
 }
 
-document.addEventListener('DOMContentLoaded', main)
+document.addEventListener('DOMContentLoaded', ()=> {setTimeout(main, 1000)})
