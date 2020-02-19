@@ -61,11 +61,15 @@ class ParticipantPaperInline(admin.TabularInline):
 
 
 class ClassParticipationInline(admin.TabularInline):
-    # TODO limit papers use to selected user. is it even possible?
     model = ClassUnit.participants.through
     autocomplete_fields = ('participant', )
     extra = 1
     classes = ('class-participation-fieldset', )
+
+    class Media:
+        js = ('ClassParticipationFilterPaper.js', )
+        css = {'all': ('css/class_participation.css', )}
+
 
     verbose_name = 'Відвідування заняття'
     verbose_name_plural = 'Відвідування заняття'
@@ -121,9 +125,6 @@ class ParticipantAdmin(admin.ModelAdmin):
 class ClassUnitAmdin(admin.ModelAdmin):
     # TODO add number of participants and teachers name to listview
     # TODO add filter by teachers
-    class Media:
-        js = ('ClassParticipationFilterPaper.js', )
-
     list_display = ('regular_class', 'date')
     list_filter = ('regular_class', )
     inlines = (ClassParticipationInline,)

@@ -1,13 +1,13 @@
 // DONE don't update options on every focus
 // DONE add listeners to new fieldsets
+// DONE limit js only to the change page (also for adding participant papers)
+// DONE options should be at the select box not jumping outside
+// DONE set paper used to none if the participant is changed
 
-// TODO make selection 100% wide
-// TODO limit js only to the change page (also for adding participant papers)
-// TODO options should be at the select box not jumping outside
-// TODO when updating options keep the selected one?
-// TODO set paper used to none if the participant is changed
+// ?TODO make selection 100% wide
 // TODO remove original choices
 // TODO check if paper belongs to a participant after save
+// TODO test on both change and add pages
 // TODO after all of this is complete deploy to pythonanywhere
 
 
@@ -20,13 +20,15 @@ async function fetchParticipantsPapers(participant_id) {
   return await response.json()
 }
 
+
 function constructOptions(participantPapers) {
   var optConstructor = (value, name, daysInUse, timesUsed) =>
     `<option value="${value}">${name} (використовується ${daysInUse} днів, ${timesUsed} раз)</option>`
   const emptyOption = '<option value="">--------&nbsp;</option>'
   return participantPapers.reduce(
     (accumulator, currVal) =>
-      accumulator + optConstructor(currVal.id, currVal.name, currVal.days_in_use, currVal.times_used),
+      accumulator + optConstructor(currVal.id, currVal.name,
+                                   currVal.days_in_use, currVal.times_used),
     emptyOption
   )
 }
@@ -41,7 +43,13 @@ class ParticipationForm {
     this.paperUsedField = this.node.querySelector(
       '.field-paper_used select'
     )
-    // this.updatePaperOptions()
+  }
+
+  init = () => {
+    // this incidentally also updates the fields when the page
+    // is loaded, because select2 initialization triggers 'change' event
+    // but, maybe this should be done explicitly
+    this.addParticipantChangeListener()
   }
 
   getCurrentParticipantId = () => {
@@ -55,11 +63,18 @@ class ParticipationForm {
     return null
   }
 
-  addPaperFieldOnFocusListener = () => {
-    this.paperUsedField.addEventListener('focus', this.updatePaperOptions)
+  getCurrentPaperId = () => {
+    return parseInt(this.paperUsedField.value)
+  }
+
+  addParticipantChangeListener = () => {
+    django.jQuery(this.participantField).on(
+      'change', this.updatePaperOptions
+    )
   }
 
   updatePaperOptions = () => {
+    const currentPaperId = this.getCurrentPaperId()
     const participantId = this.getCurrentParticipantId()
     if (participantId === this.paperOptionsSetFor) {
       return
@@ -70,15 +85,20 @@ class ParticipationForm {
       return
     }
     fetchParticipantsPapers(participantId).then(
-      papers => {
-        const options = constructOptions(papers['participantPapers'])
+      response => {
+        const papers = response['participantPapers']
+        const options = constructOptions(papers)
         this.paperUsedField.innerHTML = options
+        if (papers.map(paper => paper.id).includes(currentPaperId)) {
+          this.paperUsedField.value = currentPaperId
+        }
         this.paperOptionsSetFor = participantId
       }
     )
   }
 
 }
+
 
 function* getFormsFromParticipationSet(fieldset) {
   const nodes = fieldset.querySelectorAll('table tbody tr')
@@ -90,20 +110,22 @@ function* getFormsFromParticipationSet(fieldset) {
   }
 }
 
+
 function initParticipantForm(formNode) {
   const form = new ParticipationForm(formNode)
-  form.addPaperFieldOnFocusListener()
+  form.init()
   return form
 }
+
 
 function selectClassParticipationSets() {
   const fieldsetClass = 'class-participation-fieldset'
   const fieldset = document.getElementsByClassName(fieldsetClass)[0]
-  const forms = []
   for (const formNode of getFormsFromParticipationSet(fieldset)) {
     initParticipantForm(formNode)
   }
 }
+
 
 function main() {
   selectClassParticipationSets()
@@ -116,4 +138,4 @@ function main() {
     })
 }
 
-document.addEventListener('DOMContentLoaded', ()=> {setTimeout(main, 1000)})
+document.addEventListener('DOMContentLoaded', main)
