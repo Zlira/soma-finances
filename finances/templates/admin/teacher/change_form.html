@@ -9,6 +9,7 @@
 
 {%block content%}
   {{ block.super }}
+  {% if change %}
   <h2>Зарплата за період</h2>
   <form method="get" action="{{ request.get_full_path }}">
      {{ date_range_form.as_p }}
@@ -52,5 +53,6 @@
       value="{{date_range_form.cleaned_data.end_date.isoformat}}"/>
     <input type="submit" value="Записати винагороду"/>
   </form>
+  {% endif %}
 
 {% endblock %}
