@@ -1,13 +1,14 @@
 from django.contrib import admin
-
-import pandas as pd
+from django.shortcuts import get_object_or_404
 
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
     ClassUnit, Donation, SingleEvent, Expense, Constants
 )
-from .forms import AddParticipantPaperForm
+from .forms import AddParticipantPaperForm, DateRangeForm
+from .accounting import get_detailed_teachers_salary_for_period, \
+    default_salary_range
 
 
 class AddParticipantPaperInline(admin.StackedInline):
@@ -81,22 +82,29 @@ class PaperAdmin(admin.ModelAdmin):
 
 
 class TeacherAdmin(admin.ModelAdmin):
+    class Media:
+        css = {'all': ('css/teachers_salary.css', )}
     model = Teacher
     change_form_template = 'admin/teacher/change_form.html'
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
-
-        teacher = Teacher.objects.get(id=object_id)
-        salary_details = teacher.get_detailed_salary_for_period(
-            '2019-12-01', '2019-12-15'
+        form_data = request.GET
+        if not form_data:
+            form_data = default_salary_range()._asdict()
+        date_range_from = DateRangeForm(form_data)
+        if not date_range_from.is_valid():
+            pass
+            # TODO handle invalid form data (through messages?)
+        teacher = get_object_or_404(Teacher, pk=object_id)
+        salary = get_detailed_teachers_salary_for_period(
+            teacher, **date_range_from.cleaned_data
         )
-        unit_salary_label = 'всього за заняття'
-        salary_details = {
-            f'{class_name}: {df[unit_salary_label].sum()} грн': df.to_html()
-            for class_name, df in salary_details.items()
-        }
-        extra_context['salary_details'] = salary_details
+
+        extra_context['date_range_form'] = DateRangeForm(form_data)
+        extra_context['salary'] = salary
+        extra_context['total'] = sum(class_.sum_teachers_share() for class_ in salary)
+
         return super().change_view(
             request, object_id, form_url, extra_context=extra_context,
         )
@@ -105,6 +113,8 @@ class TeacherAdmin(admin.ModelAdmin):
 class ParticipantAdmin(admin.ModelAdmin):
     inlines = (AddParticipantPaperInline, ParticipantPaperInline, )
     search_fields = ['name']
+    list_display = ('name', 'date_created', 'email_sent')
+    list_editable = ('email_sent',)
 
 
 class ClassUnitAmdin(admin.ModelAdmin):
@@ -123,7 +133,7 @@ class DonationAdmin(admin.ModelAdmin):
 
 
 class SingleEventAdmin(admin.ModelAdmin):
-    list_display = ('name', 'date', 'admission_sum', 'bar_sum')
+    list_display = ('name', 'date', 'admission_sum', 'bar_sum', 'overall_sum')
 
 
 class ExpenseAdmin(admin.ModelAdmin):

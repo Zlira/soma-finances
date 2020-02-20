@@ -1,0 +1,15 @@
+.salary-table {
+    margin-top: 30px;
+}
+
+.salary-table__class-name {
+    font-size: 1.3em;
+    padding: 10px;
+    padding-left: 0;
+    text-align: left;
+}
+
+.total-salary {
+    font-size: 1.3em;
+    margin-top: 30px;
+}

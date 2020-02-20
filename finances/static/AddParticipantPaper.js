@@ -88,6 +88,4 @@ function initAddPaperFieldsets() {
     )
 }
 
-
-// TODO repeat if new paper was added
 document.addEventListener('DOMContentLoaded', initAddPaperFieldsets)

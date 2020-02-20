@@ -29,7 +29,7 @@ class ClassUnit(models.Model):
 
     # TODO add halfmonthly balance
 
-    def get_price_by_payement_methods(self, filters=None):
+    def get_payement_method_counts(self, filters=None):
         filters = filters or []
         payment_methods = ClassParticipation.get_aggregated_payment_methods(
             ClassParticipation.objects
