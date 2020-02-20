@@ -25,7 +25,7 @@ class AddParticipantPaperInline(admin.StackedInline):
     # TODO add the ability to set price (defualt + donation)
 
     class Media:
-        js = ('AddParticipantPaper.js', )
+        js = ('js/AddParticipantPaper.js', )
 
     verbose_name = 'Додати папірець учасни_ці'
     verbose_name_plural = 'Додати папірці учасни_ці'
@@ -67,7 +67,7 @@ class ClassParticipationInline(admin.TabularInline):
     classes = ('class-participation-fieldset', )
 
     class Media:
-        js = ('ClassParticipationFilterPaper.js', )
+        js = ('js/ClassParticipationFilterPaper.js', )
         css = {'all': ('css/class_participation.css', )}
 
 

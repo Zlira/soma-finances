@@ -12,6 +12,8 @@ from finances.models import Teacher,\
 from finances.accounting import get_detailed_teachers_salary_for_period, \
     PaymentTypes
 
+from .base_classes import SuperUserTestCase
+
 
 class TestPaymentTypes(TestCase):
 
@@ -274,7 +276,7 @@ class TestSalaryReport(TestCase):
         )
 
 
-class TestSaveSalary(TestCase):
+class TestSaveSalary(SuperUserTestCase):
 
     def set_up_salary_report_mock(self, mock, total_salary=None):
         if total_salary is None:
@@ -296,15 +298,13 @@ class TestSaveSalary(TestCase):
         )
 
     def setUp(self):
+        super().setUp()
+
         self.total_salary = 300
         self.teacher = Teacher.objects.create(name="Sensei")
         self.salary_url = reverse(
             'teachers_salary', kwargs={"teacher_id": self.teacher.id}
         )
-
-        User = get_user_model()
-        User.objects.create_user('me', 'my@email.com', 'my_password')
-        self.client.login(username='me', password='my_password')
 
     def test_access_forbiden_to_unauthorized_users(self):
         self.client.logout()

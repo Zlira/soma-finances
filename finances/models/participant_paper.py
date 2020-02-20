@@ -13,7 +13,7 @@ class ParticipantPaper(models.Model):
     paper = models.ForeignKey(
         Paper, on_delete=models.CASCADE, verbose_name="папірець"
     )
-    date_purchased = models.DateField("дата купівлі")
+    date_purchased = models.DateField("дата купівлі", auto_now=True)
     is_volunteer = models.BooleanField("чи волонтерський?", default=False, editable=True)
     # check with the price of paper
     # price = models.IntegerField("ціна")
