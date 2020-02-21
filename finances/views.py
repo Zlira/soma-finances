@@ -46,16 +46,25 @@ def participant_papers(request, participant_id):
                'id',
                name=F('paper__name'),
                days_in_use=F('days_in_use'),
-               times_used=F('times_used')
+               times_used=F('times_used'),
+               days_valid=F('paper__days_valid')
            )
            .order_by(F('times_used').desc())
            )
-    for i in res:
-        if i['days_in_use'] is None:
-            i['days_in_use'] = 0
+
+    response = []
+    for paper in res:
+        if paper['days_in_use'] is None:
+            paper['days_in_use'] = 0
         else:
-            i['days_in_use'] = i['days_in_use'].days
-    return JsonResponse({'participantPapers': list(res)})
+            paper['days_in_use'] = paper['days_in_use'].days
+        if paper['days_valid']*2 < paper['days_in_use']:
+            continue
+        paper['tentatively_expired'] = paper['days_in_use'] > paper['days_valid']
+        paper.pop('days_valid')
+        response.append(paper)
+
+    return JsonResponse({'participantPapers': list(response)})
 
 
 @require_safe
