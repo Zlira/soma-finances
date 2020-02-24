@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.shortcuts import get_object_or_404
 
 # Register your models here.
@@ -6,7 +6,8 @@ from .models import (
     Paper, Teacher, RegularClass, Participant,
     ClassUnit, Donation, SingleEvent, Expense, Constants
 )
-from .forms import AddParticipantPaperForm, DateRangeForm
+from .forms import AddParticipantPaperForm, DateRangeForm, \
+    ClassParticipationForm
 from .accounting import get_detailed_teachers_salary_for_period, \
     default_salary_range
 
@@ -39,9 +40,9 @@ class AddParticipantPaperInline(admin.StackedInline):
 
 class ParticipantPaperInline(admin.TabularInline):
     model = Participant.papers.through
-    fields = ('paper', 'is_expired', 'date_purchased', 'is_volunteer',
+    fields = ('paper', 'is_valid', 'date_purchased', 'is_volunteer',
               'number_of_uses', )
-    readonly_fields = ('number_of_uses', 'is_expired', )
+    readonly_fields = ('number_of_uses', 'is_valid', )
     extra = 0
     # TODO add the ability to set price (defualt + donation)
 
@@ -55,13 +56,14 @@ class ParticipantPaperInline(admin.TabularInline):
         return obj.get_number_of_uses()
     number_of_uses.short_description = 'разів використаний'
 
-    def is_expired(self, obj):
-        return 'так' if obj.is_expired() else 'ні'
-    is_expired.short_description = 'недійсний'
+    def is_valid(self, obj):
+        return 'так' if obj.is_valid() else 'ні'
+    is_valid.short_description = 'дійсний'
 
 
 class ClassParticipationInline(admin.TabularInline):
     model = ClassUnit.participants.through
+    form = ClassParticipationForm
     autocomplete_fields = ('participant', )
     extra = 1
     classes = ('class-participation-fieldset', )
@@ -69,7 +71,6 @@ class ClassParticipationInline(admin.TabularInline):
     class Media:
         js = ('js/ClassParticipationFilterPaper.js', )
         css = {'all': ('css/class_participation.css', )}
-
 
     verbose_name = 'Відвідування заняття'
     verbose_name_plural = 'Відвідування заняття'
@@ -128,6 +129,24 @@ class ClassUnitAmdin(admin.ModelAdmin):
     list_display = ('regular_class', 'date')
     list_filter = ('regular_class', )
     inlines = (ClassParticipationInline,)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        participation_fromset = formsets[0]
+        participants_with_expired_papers = []
+        for form in participation_fromset.forms:
+            paper_used = form.cleaned_data.get('paper_used')
+            if not paper_used:
+                continue
+            participant = form.cleaned_data['participant']
+            if paper_used.is_tentatively_expired():
+                participants_with_expired_papers.append(participant)
+        if participants_with_expired_papers:
+            participants = ', '.join([p.name for p in participants_with_expired_papers])
+            messages.warning(
+                request, f'Папірці таких учасників протерміновані: {participants}'
+            )
+
 
 
 class DonationAdmin(admin.ModelAdmin):

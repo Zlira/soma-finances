@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.urls import reverse
 
 from finances.models import RegularClass, Teacher, Participant, Paper, \
@@ -41,6 +42,9 @@ class TestParticipationAdmin(SuperUserTestCase):
             class_unit=unit, participant=participants_paper.participant,
             paper_used=participants_paper
         )
+
+    def get_class_participation_fromset_from_response(self, response):
+        return response.context_data['inline_admin_formsets'][0].formset
 
     def get_post_data(self, participations):
         data = {
@@ -96,7 +100,11 @@ class TestParticipationAdmin(SuperUserTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.regular_class.classunit_set.count(), 0)
 
-        # TODO check messages or errors
+        participation_formset = response.context_data['inline_admin_formsets'][0]
+        self.assertEqual(
+            participation_formset.forms[1].non_field_errors()[0],
+            'Please correct the duplicate values below.'
+        )
 
     def test_doesnt_let_participant_use_someone_elses_paper(self):
         participant, participants_paper = self.create_participant_with_paper()
@@ -112,9 +120,14 @@ class TestParticipationAdmin(SuperUserTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.regular_class.classunit_set.count(), 0)
 
-        # TODO check messages or errors
+        formset = self.get_class_participation_fromset_from_response(response)
+        form = formset.forms[0]
+        self.assertEqual(
+            form.errors['__all__'][0],
+            'Використаний папірець не належить учасни_ці'
+        )
 
-    def test_participant_cannot_use_paper_and_pay_one_time_price(self):
+    def test_participant_cannot_both_use_paper_and_pay_one_time_price(self):
         participant, participants_paper = self.create_participant_with_paper()
         data = self.get_post_data([(participant, participants_paper, True)])
         url = reverse('admin:finances_classunit_add')
@@ -124,7 +137,12 @@ class TestParticipationAdmin(SuperUserTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.regular_class.classunit_set.count(), 0)
 
-        # TODO check messages or errors
+        formset = self.get_class_participation_fromset_from_response(response)
+        form = formset.forms[0]
+        self.assertEqual(
+            form.errors['__all__'][0],
+            'Учасни_ця не може використати папірець і заплатити одноразову ціну одночасно'
+        )
 
     def test_cannot_participate_without_payment(self):
         participant, participants_paper = self.create_participant_with_paper()
@@ -137,24 +155,36 @@ class TestParticipationAdmin(SuperUserTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.regular_class.classunit_set.count(), 0)
 
-        # TODO check messages or errors
+        formset = self.get_class_participation_fromset_from_response(response)
+        form = formset.forms[0]
+        self.assertEqual(
+            form.errors['__all__'][0],
+            'Учасни_ця мусить використати папірець або заплатити одноразову ціну'
+        )
 
     def test_warns_when_expired_paper_is_used(self):
         participant, participants_paper = self.create_participant_with_paper()
         self.expire_paper(participants_paper)
+        init_unit_count = self.regular_class.classunit_set.count()
 
         data = self.get_post_data([(participant, participants_paper, False)])
         url = reverse('admin:finances_classunit_add')
-        response = self.client.post(url, data=data)
+        response = self.client.post(url, data=data, follow=True)
 
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse('admin:finances_classunit_changelist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.wsgi_request.path, reverse('admin:finances_classunit_changelist'))
+        self.assertEqual(self.regular_class.classunit_set.count(), init_unit_count + 1)
 
-        # TODO check messages
+        messages = get_messages(response.wsgi_request)
+
+        self.assertEqual(len(messages), 2)
+        warn_msg = next(m for m in messages if m.level_tag == 'warning')
+        self.assertIn(participant.name, warn_msg.message)
 
     def test_doesnt_allow_to_use_expired_paper_without_use_limit(self):
         participant, participants_paper = self.create_participant_with_paper(paper_limited=False)
         self.expire_paper(participants_paper)
+        init_unit_count = self.regular_class.classunit_set.count()
 
         data = self.get_post_data([(participant, participants_paper, False)])
         url = reverse('admin:finances_classunit_add')
@@ -162,13 +192,17 @@ class TestParticipationAdmin(SuperUserTestCase):
 
         # this is same page with errors marked, but it can also mean something else
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.regular_class.classunit_set.count(), 0)
+        self.assertEqual(self.regular_class.classunit_set.count(), init_unit_count)
 
-        # TODO check messages or errors
+        formset = self.get_class_participation_fromset_from_response(response)
+        form = formset.forms[0]
+        self.assertEqual(
+            form.errors.get('paper_used'), ['Використаний папіерць протермінований']
+        )
 
     def test_dosent_allow_to_use_paper_after_use_limit_reached(self):
-        participant, participants_paper = self.create_participant_with_paper(paper_limited=False)
-        for _ in range(2):
+        participant, participants_paper = self.create_participant_with_paper()
+        for _ in range(self.paper_with_limit.number_of_uses):
             class_unit = ClassUnit.objects.create(
                 date=date.today(),
                 regular_class=self.regular_class,
@@ -177,6 +211,7 @@ class TestParticipationAdmin(SuperUserTestCase):
             ClassParticipation.objects.create(
                 participant=participant, paper_used=participants_paper, class_unit=class_unit
             )
+        init_unit_count = self.regular_class.classunit_set.count()
 
         data = self.get_post_data([(participant, participants_paper, False)])
         url = reverse('admin:finances_classunit_add')
@@ -184,6 +219,10 @@ class TestParticipationAdmin(SuperUserTestCase):
 
         # this is same page with errors marked, but it can also mean something else
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.regular_class.classunit_set.count(), 0)
+        self.assertEqual(self.regular_class.classunit_set.count(), init_unit_count)
 
-        # TODO check messages or errors
+        formset = self.get_class_participation_fromset_from_response(response)
+        form = formset.forms[0]
+        self.assertEqual(
+            form.errors.get('paper_used'), ['Використання папірця вичерпані']
+        )
