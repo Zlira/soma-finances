@@ -2,13 +2,14 @@ from datetime import date, timedelta
 
 from django.test import TestCase
 
-from finances.accounting import get_months_earnings_report
+from finances.accounting import get_months_earnings_report, \
+    get_months_expenses_report
 from finances.models import Paper, Participant, ParticipantPaper, \
     RegularClass, ClassUnit, Teacher, ClassParticipation, Donation, \
-    SingleEvent
+    SingleEvent, Expense
 
 
-class TestMonthlyReport(TestCase):
+class TestMonthlyEarnings(TestCase):
     def setUp(self):
         self.limited_paper = Paper.objects.create(
             name='limited', price=500
@@ -229,6 +230,7 @@ class TestMonthlyReport(TestCase):
         self.assertDictEqual(
             earnings_report['donations'], expected_donation_earnings,
         )
+
     def test_earnings_include_single_events(self):
         single_event_1 = SingleEvent.objects.create(
             name='Pagan ritual', date=self.start_date,
@@ -280,4 +282,142 @@ class TestMonthlyReport(TestCase):
         self.assertDictEqual(
             earnings_report['events'],
             expected_event_earnings
+        )
+
+
+class TestMonthlyExpenses(TestCase):
+    def setUp(self):
+        self.start_date = date(2019, 1, 1)
+        self.end_date = date(2019, 1, 31)
+        self.year = self.start_date.year
+        self.month = self.start_date.month
+        self.date_before = self.start_date - timedelta(days=1)
+        self.date_after = self.end_date + timedelta(days=1)
+
+    def test_expenses_include_teachers_fees(self):
+        salary_1 = Expense.objects.create(
+            date=self.start_date,
+            category=Expense.FEES_CAT,
+            amount=3000,
+            description='Solpavchyks salary for February'
+        )
+        salary_2 = Expense.objects.create(
+            date=self.end_date,
+            category=Expense.FEES_CAT,
+            amount=2500,
+            description='Kvasyks salary for February'
+        )
+
+        expenses_report = get_months_expenses_report(self.year, self.month)
+        expected_fees = {
+            'total': salary_1.amount + salary_2.amount,
+            'detailed': {
+                salary_1.description: salary_1.amount,
+                salary_2.description: salary_2.amount,
+            }
+        }
+        self.assertDictEqual(expenses_report['fees'], expected_fees)
+
+    def test_expenses_dont_include_teachers_fees_from_other_months(self):
+        Expense.objects.create(
+            date=self.date_before,
+            category=Expense.FEES_CAT,
+            amount=3000,
+            description='Solpavchyks salary for February'
+        )
+        Expense.objects.create(
+            date=self.date_after,
+            category=Expense.FEES_CAT,
+            amount=2500,
+            description='Kvasyks salary for February'
+        )
+
+        expenses_report = get_months_expenses_report(self.year, self.month)
+        expected_fees = {
+            'total': 0,
+            'detailed': {}
+        }
+        self.assertDictEqual(expenses_report['fees'], expected_fees)
+
+    def test_expenses_include_main_section(self):
+        expense_1 = Expense.objects.create(
+            date=self.start_date,
+            category=Expense.MAIN_CAT,
+            amount=3000,
+            description='Rent'
+        )
+        expense_2 = Expense.objects.create(
+            date=self.end_date,
+            category=Expense.MAIN_CAT,
+            amount=2500,
+            description='Electricity'
+        )
+
+        expenses_report = get_months_expenses_report(self.year, self.month)
+        expected_fees = {
+            'total': expense_1.amount + expense_2.amount,
+            'detailed': {
+                expense_1.description: expense_1.amount,
+                expense_2.description: expense_2.amount,
+            }
+        }
+        self.assertDictEqual(expenses_report['main'], expected_fees)
+
+    def test_expenses_dont_include_main_section_from_other_months(self):
+        Expense.objects.create(
+            date=self.date_before,
+            category=Expense.MAIN_CAT,
+            amount=3000,
+            description='Rent'
+        )
+        Expense.objects.create(
+            date=self.date_after,
+            category=Expense.MAIN_CAT,
+            amount=2500,
+            description='Electricity'
+        )
+
+        expenses_report = get_months_expenses_report(self.year, self.month)
+        expected_fees = {
+            'total': 0,
+            'detailed': {}
+        }
+        self.assertDictEqual(expenses_report['main'], expected_fees)
+
+    def test_expenses_include_bar(self):
+        bar_1 = Expense.objects.create(
+            date=self.start_date,
+            category=Expense.BAR_CAT,
+            amount=3000,
+            description='Випивка'
+        )
+        bar_2 = Expense.objects.create(
+            date=self.end_date,
+            category=Expense.BAR_CAT,
+            amount=2500,
+            description='Закуска'
+        )
+
+        expenses_report = get_months_expenses_report(self.year, self.month)
+        self.assertEqual(
+            expenses_report['bar']['total'], bar_1.amount + bar_2.amount
+        )
+
+    def test_expenses_include_space(self):
+        space_1 = Expense.objects.create(
+            date=self.start_date,
+            category=Expense.SPACE_CAT,
+            amount=3000,
+            description='Фломастери'
+        )
+        space_2 = Expense.objects.create(
+            date=self.end_date,
+            category=Expense.SPACE_CAT,
+            amount=2500,
+            description='Слаймік'
+        )
+
+        expenses_report = get_months_expenses_report(self.year, self.month)
+        self.assertEqual(
+            expenses_report['space']['total'], space_1.amount + space_2.amount
         )

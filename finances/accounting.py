@@ -9,7 +9,7 @@ from operator import itemgetter
 from django.db.models import Value, F
 
 from .models import Constants, Paper, ClassUnit, ParticipantPaper, \
-    ClassParticipation, Donation, SingleEvent
+    ClassParticipation, Donation, SingleEvent, Expense
 
 
 ONE_TIME_PRICE_LABEL = 'одноразова ціна'
@@ -135,6 +135,14 @@ def get_detailed_teachers_salary_for_period(teacher, start_date, end_date):
     return res
 
 
+def month_to_range(year, month):
+    month_range = namedtuple('MonthRange', ('start_date', 'end_date'))
+    start_date = date(year, month, 1)
+    months_end_day = monthrange(year, month)[1]
+    end_date = date(year, month, months_end_day)
+    return month_range(start_date, end_date)
+
+
 def default_salary_range():
     DateRange = namedtuple('DataRange', ('start_date', 'end_date'))
     today = date.today()
@@ -153,9 +161,7 @@ def default_salary_range():
 
 
 def get_months_earnings_report(year, month):
-    start_date = date(year, month, 1)
-    months_end_day = monthrange(year, month)[1]
-    end_date = date(year, month, months_end_day)
+    start_date, end_date = month_to_range(year, month)
 
     papers = list(ParticipantPaper.aggregate_earnings_for_period(start_date, end_date))
     # TODO move this to the model method
@@ -187,3 +193,8 @@ def get_months_earnings_report(year, month):
         'donations': donations,
         'events': events,
     }
+
+
+def get_months_expenses_report(year, month):
+    start_date, end_date = month_to_range(year, month)
+    return Expense.aggregate_for_period(start_date, end_date)
