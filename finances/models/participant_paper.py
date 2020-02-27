@@ -21,6 +21,15 @@ class ParticipantPaper(models.Model):
         # TODO does this issue new db query? should select_releted be used?
         return f"{self.paper.name} ({self.get_number_of_uses()} використання, {self.participant.name})"
 
+    @classmethod
+    def aggregate_earnings_for_period(cls, start_date, end_date):
+        return (
+            cls.objects
+               .filter(date_purchased__gte=start_date, date_purchased__lte=end_date)
+               .values('paper__name', 'paper__price')
+               .annotate(count=models.Count('paper__name'), amount=models.Sum('paper__price'))
+        )
+
     def get_number_of_uses(self):
         return self.classparticipation_set.count()
 

@@ -46,6 +46,18 @@ class ClassParticipation(models.Model):
             .values('payment_method', 'count')
         )
 
+    @classmethod
+    def aggregate_earnings_for_period(cls, start_date, end_date):
+        return (
+            cls.objects
+               .filter(class_unit__date__gte=start_date,
+                       class_unit__date__lte=end_date,
+                       paid_one_time_price=True)
+               .values(class_name=models.F('class_unit__regular_class__name'),
+                       one_time_price=models.F('class_unit__regular_class__one_time_price'))
+               .annotate(count=models.Count('class_name'), amount=models.Sum('one_time_price'))
+        )
+
     def get_price(self):
         price = None
         if self.paid_one_time_price:

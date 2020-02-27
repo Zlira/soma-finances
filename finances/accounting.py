@@ -8,7 +8,8 @@ from operator import itemgetter
 
 from django.db.models import Value, F
 
-from .models import Constants, Paper, ClassUnit
+from .models import Constants, Paper, ClassUnit, ParticipantPaper, \
+    ClassParticipation, Donation, SingleEvent
 
 
 ONE_TIME_PRICE_LABEL = 'одноразова ціна'
@@ -149,3 +150,40 @@ def default_salary_range():
             date(today.year, today.month, months_middle_day + 1),
             date(today.year, today.month, months_end_day)
         )
+
+
+def get_months_earnings_report(year, month):
+    start_date = date(year, month, 1)
+    months_end_day = monthrange(year, month)[1]
+    end_date = date(year, month, months_end_day)
+
+    papers = list(ParticipantPaper.aggregate_earnings_for_period(start_date, end_date))
+    # TODO move this to the model method
+    total_from_papers = sum(p['amount'] for p in papers)
+    detailed_papers = {p['paper__name']: {'count': p['count'], 'amount': p['amount']} for p in papers}
+
+    one_time_payments = list(ClassParticipation.aggregate_earnings_for_period(
+        start_date, end_date
+    ))
+    # TODO move this to the model method
+    total_from_one_time_payments = sum(cp['amount'] for cp in one_time_payments)
+    detailed_one_time_payments = {
+        cp['class_name']: {'count': cp['count'], 'amount': cp['amount']}
+        for cp in one_time_payments
+    }
+
+    donations = Donation.aggregate_earnings_for_period(start_date, end_date)
+    events = SingleEvent.aggregate_earnings_for_period(start_date, end_date)
+
+    return {
+        'papers': {
+            'total': total_from_papers,
+            'detailed': detailed_papers,
+        },
+        'one_time_class_payments': {
+            'total': total_from_one_time_payments,
+            'detailed': detailed_one_time_payments,
+        },
+        'donations': donations,
+        'events': events,
+    }

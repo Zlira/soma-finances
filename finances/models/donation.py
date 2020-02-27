@@ -16,3 +16,13 @@ class Donation(models.Model):
 
     def __str__(self):
         return f'{self.source} ({self.amount} грн)'
+
+    @classmethod
+    def aggregate_earnings_for_period(cls, start_date, end_date):
+        res = (
+            cls.objects
+               .filter(date__gte=start_date, date__lte=end_date)
+               .aggregate(total=models.Sum('amount'))
+        )
+        res['total'] = res['total'] or 0
+        return res
