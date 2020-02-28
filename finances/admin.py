@@ -4,7 +4,8 @@ from django.shortcuts import get_object_or_404
 # Register your models here.
 from .models import (
     Paper, Teacher, RegularClass, Participant,
-    ClassUnit, Donation, SingleEvent, Expense, Constants
+    ClassUnit, Donation, SingleEvent, Expense, Constants,
+    MonthlyReport,
 )
 from .forms import AddParticipantPaperForm, DateRangeForm
 from .accounting import get_detailed_teachers_salary_for_period, \
@@ -146,6 +147,10 @@ class ConstantsAdmin(admin.ModelAdmin):
     actions = None
 
 
+class MonthlyReportAdmin(admin.ModelAdmin):
+    readonly_fields = ('year', 'month', 'total_balance', 'money_left', 'report')
+
+
 admin.site.register(ClassUnit, ClassUnitAmdin)
 admin.site.register(Paper, PaperAdmin)
 admin.site.register(Teacher, TeacherAdmin)
@@ -155,3 +160,4 @@ admin.site.register(Donation, DonationAdmin)
 admin.site.register(SingleEvent, SingleEventAdmin)
 admin.site.register(Expense, ExpenseAdmin)
 admin.site.register(Constants, ConstantsAdmin)
+admin.site.register(MonthlyReport, MonthlyReportAdmin)

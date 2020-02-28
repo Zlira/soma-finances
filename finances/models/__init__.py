@@ -9,3 +9,4 @@ from .donation import Donation
 from .single_event import SingleEvent
 from .expense import Expense
 from .default_constants import Constants
+from .monthly_report import MonthlyReport

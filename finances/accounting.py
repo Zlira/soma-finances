@@ -198,3 +198,19 @@ def get_months_earnings_report(year, month):
 def get_months_expenses_report(year, month):
     start_date, end_date = month_to_range(year, month)
     return Expense.aggregate_for_period(start_date, end_date)
+
+
+def get_months_report(year, month):
+    earnings = get_months_earnings_report(year, month)
+    expenses = get_months_expenses_report(year, month)
+
+    earnings['total'] = sum(
+        category['total'] for category in earnings.values()
+    )
+    expenses['total'] = sum(
+        category['total'] for category in expenses.values()
+    )
+    return {
+        'earnings': earnings,
+        'expenses': expenses,
+    }
