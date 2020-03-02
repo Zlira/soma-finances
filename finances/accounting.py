@@ -182,16 +182,16 @@ def get_months_earnings_report(year, month):
     events = SingleEvent.aggregate_earnings_for_period(start_date, end_date)
 
     return {
-        'papers': {
+        'папірці': {
             'total': total_from_papers,
             'detailed': detailed_papers,
         },
-        'one_time_class_payments': {
+        'за заняття': {
             'total': total_from_one_time_payments,
             'detailed': detailed_one_time_payments,
         },
-        'donations': donations,
-        'events': events,
+        'донації': donations,
+        'події': events,
     }
 
 

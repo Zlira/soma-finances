@@ -5,17 +5,28 @@
 {%block content%}
   {{ block.super }}
   <h2>Всього доходу: {{ original.report.earnings.total }}&nbsp;грн</h2>
-
-  <svg id="earnings-report" viewBox="0 0 700 250" width="700px" height="250px"
-    style="display: block; fill: green;" xmlns="http://www.w3.org/2000/svg">
-  </svg>
+  <div>
+    <svg id="earnings-report" viewBox="0 0 700 250" width="700px" height="250px"
+      style="fill: rgb(32, 80, 103);" xmlns="http://www.w3.org/2000/svg">
+    </svg>
+    <!--div style="display: inline-block; height: 250px;">
+      Детально:
+      <ul id="earnings-details"></ul>
+    </div-->
+  </div>
   <h2>Всього витрат: {{ original.report.expenses.total }}&nbsp;грн</h2>
-  <svg id="expenses-report" viewBox="0 0 700 250" width="700px" height="250px"
-    style="display: block; fill: red;" xmlns="http://www.w3.org/2000/svg">
-  </svg>
+  <div>
+    <svg id="expenses-report" viewBox="0 0 700 250" width="700px" height="250px"
+      style="fill: rgb(186, 33, 33);" xmlns="http://www.w3.org/2000/svg">
+    </svg>
+    <!--div style="display: inline-block; height: 250px;">
+      Детально:
+      <ul id="expenses-details"></ul>
+    </div -->
+  </div>
   <script>
     const scaleSize = getScaleSize({{original.report|safe}});
-    fillReport('earnings-report', {{original.report.earnings|safe}}, scaleSize);
-    fillReport('expenses-report', {{original.report.expenses|safe}}, scaleSize);
+    fillReport('earnings-report', 'earnings-details', {{original.report.earnings|safe}}, scaleSize);
+    fillReport('expenses-report', 'expenses-details', {{original.report.expenses|safe}}, scaleSize);
   </script>
 {% endblock %}

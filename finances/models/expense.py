@@ -33,6 +33,7 @@ class Expense(models.Model):
         filtered = cls.objects.filter(
             date__gte=start_date, date__lte=end_date
         )
+        category_dict = dict(cls.CATEGORY_CHOICES)
         res = {}
         detailed_categories = [
             cls.FEES_CAT, cls.MAIN_CAT,
@@ -42,7 +43,7 @@ class Expense(models.Model):
                 filtered.filter(category=category)
                 .values('description', 'amount')
             )
-            res[category] = {
+            res[category_dict[category]] = {
                 'total': sum(e['amount'] for e in entries),
                 'detailed': {
                     e['description']: e['amount'] for e in entries
@@ -57,5 +58,5 @@ class Expense(models.Model):
                     .annotate(total=models.Sum('amount'))
                     .order_by('category'))
         for e in entries:
-            res[e['category']] = {'total': e['total']}
+            res[category_dict[e['category']]] = {'total': e['total']}
         return res
