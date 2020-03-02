@@ -63,10 +63,10 @@ class MonthlyReport(models.Model):
         )
 
     def get_previous(self):
-        return self._previous().only()
+        return self._previous().first()
 
     def get_next(self):
-        return self._next().only()
+        return self._next().first()
 
     def is_latest(self):
         return not self._next().exists()

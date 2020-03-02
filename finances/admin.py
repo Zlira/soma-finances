@@ -9,7 +9,7 @@ from .models import (
 )
 from .forms import AddParticipantPaperForm, DateRangeForm
 from .accounting import get_detailed_teachers_salary_for_period, \
-    default_salary_range
+    default_salary_range, get_months_report
 
 
 class AddParticipantPaperInline(admin.StackedInline):
@@ -148,7 +148,33 @@ class ConstantsAdmin(admin.ModelAdmin):
 
 
 class MonthlyReportAdmin(admin.ModelAdmin):
-    readonly_fields = ('year', 'month', 'total_balance', 'money_left', 'report')
+    readonly_fields = ('year', 'month', 'total_balance', 'money_left', )
+    exclude = ('report', )
+    change_form_template = 'admin/monthly_report/change_form.html'
+
+    class Media:
+        js = ('MonthlyReport.js', )
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def get_object(self, request, object_id, from_field=None):
+        obj = super().get_object(request, object_id, from_field)
+        if obj.is_latest():
+            report = get_months_report(obj.year, obj.month)
+            obj.total_balance = (
+                report['earnings']['total'] - report['expenses']['total']
+            )
+            obj.report = report
+            previous_report = obj.get_previous()
+            if previous_report:
+                obj.money_left = previous_report.money_left + obj.total_balance
+        return obj
+
+
+    # def change_view(self, request, object_id, form_url='', extra_context=None):
+    #     import ipdb; ipdb.set_trace();
+    #     return super().change_view(request, object_id, form_url, extra_context)
 
 
 admin.site.register(ClassUnit, ClassUnitAmdin)
