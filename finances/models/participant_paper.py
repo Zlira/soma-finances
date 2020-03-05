@@ -66,10 +66,17 @@ class ParticipantPaper(models.Model):
             soft_limit < days_in_use <= hard_limit
         )
 
-    def is_out_of_uses(self):
+    def was_used_on_unit(self, unit_id):
+        return self.classparticipation_set.filter(class_unit=unit_id).exists()
+
+    def is_out_of_uses(self, for_unit=None):
+        number_of_uses = self.get_number_of_uses()
+        if for_unit:
+            if self.was_used_on_unit(for_unit):
+                number_of_uses -= 1
         return (
             self.paper.number_of_uses and
-            self.get_number_of_uses() >= self.paper.number_of_uses
+            number_of_uses >= self.paper.number_of_uses
         )
 
     def is_valid(self):

@@ -28,6 +28,18 @@ from .auth import require_authentication
 @require_safe
 @require_authentication
 def participant_papers(request, participant_id):
+    request_for_unit = request.GET.get('for_unit')
+    papers_used_on_unit = []
+    if request_for_unit:
+        papers_used_on_unit = (
+            ParticipantPaper.objects
+            .filter(
+                classparticipation__class_unit=request_for_unit,
+                participant_id=participant_id)
+            .values_list('id')
+        )
+        papers_used_on_unit = [p_id[0] for p_id in papers_used_on_unit]
+
     get_object_or_404(Participant, pk=participant_id)
     days_in_use = ExpressionWrapper(
         Cast(date.today(), fields.DateField()) -
@@ -37,11 +49,9 @@ def participant_papers(request, participant_id):
     res = (ParticipantPaper.objects
            .annotate(
                days_in_use=days_in_use,
-               times_used=Count('classparticipation')
+               times_used=Count('classparticipation'),
            )
            .filter(
-               Q(paper__number_of_uses__gt=F('times_used')) |
-               Q(paper__number_of_uses__isnull=True),
                participant=participant_id
            )
            .select_related('participant', 'paper')
@@ -50,13 +60,26 @@ def participant_papers(request, participant_id):
                name=F('paper__name'),
                days_in_use=F('days_in_use'),
                times_used=F('times_used'),
-               days_valid=F('paper__days_valid')
+               days_valid=F('paper__days_valid'),
+               number_use_limit=F('paper__number_of_uses'),
            )
            .order_by(F('times_used').desc())
            )
 
     response = []
     for paper in res:
+        # filter by number of uses
+        number_use_limit = paper.pop('number_use_limit')
+        print(type(number_use_limit), number_use_limit)
+        if number_use_limit:
+            times_used = paper['times_used']
+            if paper['id'] in papers_used_on_unit:
+                times_used -= 1
+            if number_use_limit <= times_used:
+                continue
+
+        # filter by days in use
+        # TODO take into account the date of the unit
         if paper['days_in_use'] is None:
             paper['days_in_use'] = 0
         else:

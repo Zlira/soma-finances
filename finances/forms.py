@@ -53,6 +53,7 @@ class ClassParticipationForm(ModelForm):
 
     def clean_paper_used(self):
         paper_used = self.cleaned_data.get('paper_used')
+        class_unit = self.cleaned_data.get('class_unit')
         if not paper_used:
             return paper_used
 
@@ -60,8 +61,7 @@ class ClassParticipationForm(ModelForm):
             self.add_error(
                 'paper_used', 'Використаний папіерць протермінований',
             )
-        if paper_used.is_out_of_uses():
-
+        if paper_used.is_out_of_uses(for_unit=class_unit):
             self.add_error(
                 'paper_used', 'Використання папірця вичерпані',
             )

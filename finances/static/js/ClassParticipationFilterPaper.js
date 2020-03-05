@@ -11,26 +11,63 @@
 // TODO after all of this is complete deploy to pythonanywhere
 
 
+function getClassUnitId() {
+  const pathParts = window.location.pathname.split('/').filter(e=>e)
+  const lastPart = pathParts[pathParts.length - 1]
+  if (lastPart === 'change') {
+    return parseInt(pathParts[pathParts.length - 2])
+  }
+}
+
 async function fetchParticipantsPapers(participant_id) {
   const protocol = window.location.protocol;
   const host = window.location.host;
   const path = `finances/participant/${participant_id}/papers`;
-  const url = new URL(`${protocol}//${host}/${path}`)
+  const url = new URL(`${protocol}//${host}/${path}`);
+
+  // FIXME it's not a good place for this
+  const classUnitId = getClassUnitId();
+  if (classUnitId) {
+    url.search = new URLSearchParams({for_unit: classUnitId})
+  }
   const response = await fetch(url)
   return await response.json()
 }
 
 
-function constructOptions(participantPapers) {
+function paperListToOptions(participantPapers) {
   var optConstructor = (value, name, daysInUse, timesUsed) =>
     `<option value="${value}">${name} (використовується ${daysInUse} днів, ${timesUsed} раз)</option>`
-  const emptyOption = '<option value="">--------&nbsp;</option>'
   return participantPapers.reduce(
     (accumulator, currVal) =>
       accumulator + optConstructor(currVal.id, currVal.name,
                                    currVal.days_in_use, currVal.times_used),
-    emptyOption
+    ''
   )
+}
+
+function constructOptions(participantPapers) {
+  const emptyOption = '<option value="">--------&nbsp;</option>';
+  let innerHTML = emptyOption;
+  const groups = [
+    {name: 'активні', papers: [], condition: p => p.times_used > 0 && p.days_in_use <= 30},
+    {name: 'продовжений період', papers: [], condition: p => p.days_in_use > 30},
+    {name: 'нові', papers: [], condition: p => p.times_used === 0},
+  ];
+  for (let paper of participantPapers) {
+    for (let group of groups) {
+      if (group.condition(paper)) {
+        group.papers.push(paper);
+        break;
+      }
+    }
+  }
+  for (let {name, papers} of groups) {
+    if (!papers.length) {continue};
+    innerHTML += `<optgroup label="${name}">${paperListToOptions(papers)}</optgroup>`;
+  }
+  return innerHTML;
+
 }
 
 
@@ -86,13 +123,13 @@ class ParticipationForm {
     }
     fetchParticipantsPapers(participantId).then(
       response => {
-        const papers = response['participantPapers']
-        const options = constructOptions(papers)
-        this.paperUsedField.innerHTML = options
+        const papers = response['participantPapers'];
+        const options = constructOptions(papers);
+        this.paperUsedField.innerHTML = options;
         if (papers.map(paper => paper.id).includes(currentPaperId)) {
-          this.paperUsedField.value = currentPaperId
-        }
-        this.paperOptionsSetFor = participantId
+          this.paperUsedField.value = currentPaperId;
+        };
+        this.paperOptionsSetFor = participantId;
       }
     )
   }
