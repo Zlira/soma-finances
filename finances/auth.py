@@ -3,7 +3,7 @@ from functools import wraps
 from django.http import HttpResponse
 
 
-def require_authentification(func):
+def require_authentication(func):
     @wraps(func)
     def wrapper(request, *args, **kwargs):
         if request.user.is_authenticated:

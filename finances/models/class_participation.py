@@ -13,7 +13,7 @@ class ClassParticipation(models.Model):
         'ClassUnit', on_delete=models.CASCADE, verbose_name="заняття"
     )
     participant = models.ForeignKey(
-        Participant, on_delete=models.CASCADE, verbose_name="учасни_ця"
+        Participant, on_delete=models.CASCADE, verbose_name="учасни_ця",
     )
     # TODO add restriction that this should be participant's paper
     paper_used = models.ForeignKey(
@@ -22,6 +22,23 @@ class ClassParticipation(models.Model):
     )
     paid_one_time_price = models.BooleanField(
         'одноразовий внесок', default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['class_unit', 'participant'],
+                name='%(app_label)s_%(class)s_unit_and_participant_unique_together',
+            ),
+            models.CheckConstraint(
+                check=(
+                    (models.Q(paper_used__isnull=False)
+                    & models.Q(paid_one_time_price=False)) |
+                    (models.Q(paper_used__isnull=True)
+                    & models.Q(paid_one_time_price=True))
+                ),
+                name='%(app_label)s_%(class)s_only_one_payment_method',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.participant} на {self.class_unit}'

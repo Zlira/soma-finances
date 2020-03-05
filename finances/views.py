@@ -1,9 +1,11 @@
 from datetime import date
 
-from django.db.models import Value, CharField, F, DurationField, \
-    ExpressionWrapper, fields, Count, Min, Q
-from django.db.models.functions import Cast, Concat
 from django.contrib import messages
+from django.db.models import (
+    Value, CharField, F, DurationField,
+    ExpressionWrapper, fields, Count, Min, Q
+)
+from django.db.models.functions import Cast
 from django.forms.fields import DateField
 from django.forms import ValidationError
 from django.http import JsonResponse, HttpResponseBadRequest, \
@@ -13,17 +15,18 @@ from django.views.decorators.http import require_safe, require_POST
 from django.utils.safestring import mark_safe
 from django.urls import reverse
 
-from .auth import require_authentification
+from .auth import require_authentication
 from .models import ParticipantPaper, Paper, Participant, Teacher, Expense
 from .accounting import get_detailed_teachers_salary_for_period
 from .forms import DateRangeForm
 
 
+from .auth import require_authentication
+
+
 # TODO should we use something like ajax_required decorator
-
-
 @require_safe
-@require_authentification
+@require_authentication
 def participant_papers(request, participant_id):
     get_object_or_404(Participant, pk=participant_id)
     days_in_use = ExpressionWrapper(
@@ -68,7 +71,7 @@ def participant_papers(request, participant_id):
 
 
 @require_safe
-@require_authentification
+@require_authentication
 def paper(request):
     paper_id = request.GET.get('paper_id')
     if not paper_id:
@@ -81,10 +84,8 @@ def paper(request):
 
 
 @require_POST
+@require_authentication
 def teachers_salary(request, teacher_id):
-    # TODO replace this with a decorator
-    if not request.user.is_authenticated:
-        return HttpResponse('Unauthorized', status=401)
     form = DateRangeForm(request.POST)
     if not form.is_valid():
         return HttpResponse(form.errors, status=400)
