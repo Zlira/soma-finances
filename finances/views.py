@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.contrib import messages
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import (
     Value, CharField, F, DurationField,
     ExpressionWrapper, fields, Count, Min, Q
@@ -16,10 +17,9 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse
 
 from .auth import require_authentication
-from .models import ParticipantPaper, Paper, Participant, Teacher, Expense
+from .models import ParticipantPaper, Paper, Participant, Teacher, Expense, ClassUnit
 from .accounting import get_detailed_teachers_salary_for_period
 from .forms import DateRangeForm
-
 
 from .auth import require_authentication
 
@@ -30,6 +30,8 @@ from .auth import require_authentication
 def participant_papers(request, participant_id):
     request_for_unit = request.GET.get('for_unit')
     papers_used_on_unit = []
+    unit_date = None
+
     if request_for_unit:
         papers_used_on_unit = (
             ParticipantPaper.objects
@@ -40,9 +42,16 @@ def participant_papers(request, participant_id):
         )
         papers_used_on_unit = [p_id[0] for p_id in papers_used_on_unit]
 
+        try:
+            unit_date = ClassUnit.objects.get(id=request_for_unit).date
+        except ObjectDoesNotExist:
+            pass
+
     get_object_or_404(Participant, pk=participant_id)
+
+    for_date = unit_date or date.today()
     days_in_use = ExpressionWrapper(
-        Cast(date.today(), fields.DateField()) -
+        Cast(for_date, fields.DateField()) -
         Min('classparticipation__class_unit__date'),
         output_field=fields.DurationField()
     )

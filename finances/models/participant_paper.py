@@ -16,13 +16,9 @@ class ParticipantPaper(models.Model):
     )
     date_purchased = models.DateField("дата купівлі", default=now)
     is_volunteer = models.BooleanField("чи волонтерський?", default=False, editable=True)
-    # check with the price of paper
-    # price = models.IntegerField("ціна")
+
     def __str__(self):
-        # TODO does this issue new db query? should select_releted be used?
-        first_use = self.get_first_use_date()
-        days_in_use = 0 if not first_use else (date.today() - first_use).days
-        return f"{self.paper.name} (використовується {days_in_use} днів, {self.get_number_of_uses()} раз)"
+        return f"Папірець ({self.id}) учасни_ці {self.participant.id}"
 
     @classmethod
     def aggregate_earnings_for_period(cls, start_date, end_date):
@@ -45,15 +41,15 @@ class ParticipantPaper(models.Model):
     def has_use_number_limit(self):
         return bool(self.paper.number_of_uses)
 
-    def is_expired(self):
+    def is_expired(self, for_unit=None):
         first_use_date = self.get_first_use_date()
         if not first_use_date:
             return False
         soft_limit = self.paper.days_valid
         hard_limit = soft_limit * 2 if self.has_use_number_limit() else soft_limit
-        return (
-            (date.today() - first_use_date).days > hard_limit
-        )
+
+        for_date = date.today() if not for_unit else for_unit.date
+        return (for_date - first_use_date).days > hard_limit
 
     def is_tentatively_expired(self):
         first_use_date = self.get_first_use_date()

@@ -37,7 +37,7 @@ async function fetchParticipantsPapers(participant_id) {
 
 function paperListToOptions(participantPapers) {
   var optConstructor = (value, name, daysInUse, timesUsed) =>
-    `<option value="${value}">${name} (використовується ${daysInUse} днів, ${timesUsed} раз)</option>`
+    `<option value="${value}">${name} (використовувався ${daysInUse} днів, ${timesUsed} раз)</option>`
   return participantPapers.reduce(
     (accumulator, currVal) =>
       accumulator + optConstructor(currVal.id, currVal.name,
