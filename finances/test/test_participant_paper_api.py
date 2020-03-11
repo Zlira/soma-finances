@@ -21,40 +21,42 @@ class ParticipantPaperTestCase(TestCase):
     def setUp(self):
         User = get_user_model()
         User.objects.create_user(user_name, user_email, user_password)
-        self.create_paper()
         self.client.login(username=user_name, password=user_password)
+
+        self.paper = self.create_paper()
         self.participant = Participant.objects.create(name=participant_name)
-        self.participantPaper = ParticipantPaper.objects.create(
+        self.participant_paper = ParticipantPaper.objects.create(
             participant=self.participant,
             paper=self.paper,
             date_purchased=test_date
         )
         self.teacher = Teacher.objects.create(name=teacer_name)
-        self.regularClass = RegularClass.objects.create(
+        self.regular_class = RegularClass.objects.create(
             name=class_name,
             start_date=test_date
         )
 
     def create_paper(self, days_valid=1):
-        self.paper = Paper.objects.create(
+        return Paper.objects.create(
             name=paper_name,
             price=0,
             number_of_uses=2,
             days_valid=days_valid
         )
 
-    def create_classUnit(self, date=test_date):
-        self.classUnit = ClassUnit.objects.create(
-            regular_class=self.regularClass,
+    def create_class_unit(self, date=test_date):
+        return ClassUnit.objects.create(
+            regular_class=self.regular_class,
             date=date,
             teacher=self.teacher
         )
 
-    def create_classParticipation(self):
-        self.classParticipation = ClassParticipation.objects.create(
-            class_unit=self.classUnit,
+    def create_class_participation(self, class_unit=None):
+        class_unit = class_unit or self.class_unit
+        return ClassParticipation.objects.create(
+            class_unit=class_unit,
             participant=self.participant,
-            paper_used=self.participantPaper
+            paper_used=self.participant_paper
         )
 
     def test_denies_unauthorised_access(self):
@@ -73,8 +75,8 @@ class ParticipantPaperTestCase(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_response_for_participant_with_existing_id(self):
-        self.create_classUnit()
-        self.create_classParticipation()
+        class_unit = self.create_class_unit()
+        self.create_class_participation(class_unit)
         response = self.client.get(
             reverse('participant_papers', kwargs={
                     'participant_id': self.participant.id})
@@ -89,9 +91,10 @@ class ParticipantPaperTestCase(TestCase):
                          })
 
     def test_response_when_paper_exceeded_number_of_uses(self):
-        self.create_classUnit()
-        self.create_classParticipation()
-        self.create_classParticipation()
+        class_unit_1 = self.create_class_unit()
+        class_unit_2 = self.create_class_unit()
+        self.create_class_participation(class_unit_1)
+        self.create_class_participation(class_unit_2)
         response = self.client.get(
             reverse('participant_papers', kwargs={
                     'participant_id': self.participant.id})
@@ -100,8 +103,8 @@ class ParticipantPaperTestCase(TestCase):
         self.assertEqual(len(response.json()['participantPapers']), 0)
 
     def test_response_when_paper_exceeded_number_of_days_valid(self):
-        self.create_classUnit(date=date(2020, 1, 1))
-        self.create_classParticipation()
+        class_unit = self.create_class_unit(date=date(2020, 1, 1))
+        self.create_class_participation(class_unit)
         response = self.client.get(
             reverse('participant_papers', kwargs={
                     'participant_id': self.participant.id})
@@ -110,8 +113,8 @@ class ParticipantPaperTestCase(TestCase):
         self.assertEqual(len(response.json()['participantPapers']), 0)
 
     def test_response_when_paper_tentatively_expired(self):
-        self.create_classUnit(date=(date.today()-timedelta(days=2)))
-        self.create_classParticipation()
+        class_unit = self.create_class_unit(date=(date.today()-timedelta(days=2)))
+        self.create_class_participation(class_unit)
         response = self.client.get(
             reverse('participant_papers', kwargs={
                     'participant_id': self.participant.id})
@@ -124,3 +127,4 @@ class ParticipantPaperTestCase(TestCase):
                          'name': 'Maupa',
                          'tentatively_expired': True
                          })
+# TODO add tests with for_unit query parameter
