@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from .models import (
     Paper, Teacher, RegularClass, Participant,
     ClassUnit, Donation, SingleEvent, Expense, Constants,
-    MonthlyReport,
+    MonthlyReport, ParticipantPaper,
 )
 from .forms import AddParticipantPaperForm, DateRangeForm, \
     ClassParticipationForm

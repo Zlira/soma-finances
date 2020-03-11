@@ -24,6 +24,14 @@ class ClassParticipationForm(ModelForm):
         model = ClassParticipation
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.id:
+            participant_id = self.instance.participant.id if self.instance.participant else None
+            self.fields['paper_used'].queryset = ParticipantPaper.objects.filter(
+                participant=participant_id
+            )
+
     def clean(self):
         cleaned_data = super().clean()
         paper_used = cleaned_data.get('paper_used')
@@ -43,7 +51,8 @@ class ClassParticipationForm(ModelForm):
             )
 
         # this is not enforced on DB level
-        if not cleaned_data['paper_used'].participant == cleaned_data['participant']:
+        # TODO try to use limit_choices_to in to model
+        if paper_used and not paper_used.participant == cleaned_data['participant']:
             raise ValidationError(
                 'Використаний папірець не належить учасни_ці',
                 code='invalid'

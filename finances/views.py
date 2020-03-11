@@ -70,7 +70,6 @@ def participant_papers(request, participant_id):
     for paper in res:
         # filter by number of uses
         number_use_limit = paper.pop('number_use_limit')
-        print(type(number_use_limit), number_use_limit)
         if number_use_limit:
             times_used = paper['times_used']
             if paper['id'] in papers_used_on_unit:
