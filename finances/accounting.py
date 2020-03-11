@@ -106,7 +106,7 @@ class PaymentTypes:
     def get_for_class(self, regular_class):
         payment_types = OrderedDict(self.paper_payments)
         one_time_payment = OneTimePayment(
-            teachers_share=regular_class.one_time_price / 2
+            teachers_share=(regular_class.one_time_price or 0) / 2
         )
         payment_types[one_time_payment.id_] = one_time_payment
         return payment_types

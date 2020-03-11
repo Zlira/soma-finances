@@ -12,7 +12,7 @@ function fillReport(svgId, detailsId, data, scaleSize) {
     let textCont, text, group, y, bar, setDetials, counter = 0;
     const sectionHeight = height / dataLength;
     const barHeight = 30;
-    const leftMargin = 100;
+    const leftMargin = 150;
     const rightMargin = 20;
     for (let [sectionName, sectionReport] of data) {
         if (sectionName === 'total') {continue;}
@@ -23,7 +23,7 @@ function fillReport(svgId, detailsId, data, scaleSize) {
         textCont.setAttribute('y', y);
         textCont.setAttribute('dominant-baseline', 'middle');
         textCont.setAttribute('fill', 'black');
-        text = document.createTextNode(sectionName);
+        text = document.createTextNode(`${sectionName} ${sectionReport.total} грн`);
         textCont.appendChild(text);
 
         bar = document.createElementNS(svgNs, 'rect');
@@ -40,30 +40,12 @@ function fillReport(svgId, detailsId, data, scaleSize) {
         group.setAttribute("style", "pointer-events: bounding-box;");
         group.appendChild(textCont);
         group.appendChild(bar);
-        setDetails = () => {setSectionDetails(detailsId, sectionReport)};
-        group.addEventListener('click', setDetails);
 
         svg.appendChild(group);
         counter ++;
     }
 }
 
-
-function setSectionDetails(elementId, data) {
-    console.log(data);
-    return;
-    if (!data) {return};
-    const detailsList = document.getElementById(elementId);
-    detailsList.innerHTML = '';
-    if (!data.detailed) {return};
-    let listItem;
-    console.log(data.detailed);
-    for (let [key, val] of Object.entries(data.detailed)) {
-        listItem = document.createElement('li');
-        listItem.innerText = `${key}: ${val.total} грн`;
-        detailsList.append(listItem);
-    }
-}
 
 function getScaleSize(data) {
     const earnings = data.earnings;

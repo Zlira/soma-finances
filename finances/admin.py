@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib import admin, messages
 from django.shortcuts import get_object_or_404
 
@@ -174,28 +176,43 @@ class MonthlyReportAdmin(admin.ModelAdmin):
     change_form_template = 'admin/monthly_report/change_form.html'
 
     class Media:
-        js = ('MonthlyReport.js', )
+        js = ('js/MonthlyReport.js', )
 
     def has_add_permission(self, request, obj=None):
         return False
 
     def get_object(self, request, object_id, from_field=None):
         obj = super().get_object(request, object_id, from_field)
-        if obj.is_latest():
+        if obj and obj.is_latest():
             report = get_months_report(obj.year, obj.month)
             obj.total_balance = (
                 report['earnings']['total'] - report['expenses']['total']
             )
             obj.report = report
             previous_report = obj.get_previous()
-            if previous_report:
+            if previous_report and previous_report.money_left:
                 obj.money_left = previous_report.money_left + obj.total_balance
         return obj
 
+    def add_reminder_message(self, request):
+        if MonthlyReport.is_time_for_new_one():
+            messages.warning(
+                request,
+                "Не забудьте зберегти звіт за останній місяць, щоб створився новий"
+            )
 
-    # def change_view(self, request, object_id, form_url='', extra_context=None):
-    #     import ipdb; ipdb.set_trace();
-    #     return super().change_view(request, object_id, form_url, extra_context)
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        response = super().change_view(request, object_id, form_url, extra_context)
+        self.add_reminder_message(request)
+        return response
+
+    def save_model(self, request, obj, form, change):
+        if date.today() < obj.last_day():
+            messages.error(request, "До останнього дня місця звіт динамічний, його не можна зберегти")
+            return
+        super().save_model(request, obj, form, change)
+        if MonthlyReport.is_time_for_new_one():
+            MonthlyReport.create_next()
 
 
 admin.site.register(ClassUnit, ClassUnitAmdin)
