@@ -49,7 +49,7 @@ class TestMonthlyEarnings(TestCase):
             }
         }
         self.assertDictEqual(
-            earnings_report['papers'], expected_report
+            earnings_report['папірці'], expected_report
         )
 
     def test_earnings_dont_include_papers_from_other_months(self):
@@ -72,7 +72,30 @@ class TestMonthlyEarnings(TestCase):
             'detailed': {}
         }
         self.assertDictEqual(
-            earnings_report['papers'], expected_report
+            earnings_report['папірці'], expected_report
+        )
+
+    def test_earnings_dont_include_volunteer_papers(self):
+        participant_1 = Participant.objects.create(name='solpav')
+
+        ParticipantPaper.objects.create(
+            participant=participant_1, paper=self.limited_paper,
+            date_purchased=self.start_date, is_volunteer=True,
+        )
+        ParticipantPaper.objects.create(
+            participant=participant_1, paper=self.limitless_paper,
+            date_purchased=self.end_date + timedelta(days=1)
+        )
+
+        earnings_report = get_months_earnings_report(
+            self.start_date.year, self.start_date.month
+        )
+        expected_report = {
+            'total': 0,
+            'detailed': {}
+        }
+        self.assertDictEqual(
+            earnings_report['папірці'], expected_report
         )
 
     def test_earnings_include_one_time_payments_for_classes(self):
@@ -117,7 +140,7 @@ class TestMonthlyEarnings(TestCase):
             }
         }
         self.assertDictEqual(
-            earnings_report['one_time_class_payments'],
+            earnings_report['за заняття'],
             expected_class_payments,
         )
 
@@ -154,7 +177,7 @@ class TestMonthlyEarnings(TestCase):
             'detailed': {}
         }
         self.assertDictEqual(
-            earnings_report['one_time_class_payments'],
+            earnings_report['за заняття'],
             expected_class_payments,
         )
 
@@ -188,7 +211,7 @@ class TestMonthlyEarnings(TestCase):
             'detailed': {}
         }
         self.assertDictEqual(
-            earnings_report['one_time_class_payments'],
+            earnings_report['за заняття'],
             expected_class_payments,
         )
 
@@ -210,7 +233,7 @@ class TestMonthlyEarnings(TestCase):
             'total': donation_1.amount + donation_2.amount
         }
         self.assertDictEqual(
-            earnings_report['donations'], expected_donation_earnings,
+            earnings_report['донації'], expected_donation_earnings,
         )
 
     def test_earnins_dont_include_donations_from_other_months(self):
@@ -228,7 +251,7 @@ class TestMonthlyEarnings(TestCase):
             'total': 0
         }
         self.assertDictEqual(
-            earnings_report['donations'], expected_donation_earnings,
+            earnings_report['донації'], expected_donation_earnings,
         )
 
     def test_earnings_include_single_events(self):
@@ -258,7 +281,7 @@ class TestMonthlyEarnings(TestCase):
             }
         }
         self.assertDictEqual(
-            earnings_report['events'],
+            earnings_report['події'],
             expected_event_earnings
         )
 
@@ -280,7 +303,7 @@ class TestMonthlyEarnings(TestCase):
             'detailed': {}
         }
         self.assertDictEqual(
-            earnings_report['events'],
+            earnings_report['події'],
             expected_event_earnings
         )
 
@@ -316,7 +339,7 @@ class TestMonthlyExpenses(TestCase):
                 salary_2.description: salary_2.amount,
             }
         }
-        self.assertDictEqual(expenses_report['fees'], expected_fees)
+        self.assertDictEqual(expenses_report['гонорари'], expected_fees)
 
     def test_expenses_dont_include_teachers_fees_from_other_months(self):
         Expense.objects.create(
@@ -337,7 +360,7 @@ class TestMonthlyExpenses(TestCase):
             'total': 0,
             'detailed': {}
         }
-        self.assertDictEqual(expenses_report['fees'], expected_fees)
+        self.assertDictEqual(expenses_report['гонорари'], expected_fees)
 
     def test_expenses_include_main_section(self):
         expense_1 = Expense.objects.create(
@@ -361,7 +384,7 @@ class TestMonthlyExpenses(TestCase):
                 expense_2.description: expense_2.amount,
             }
         }
-        self.assertDictEqual(expenses_report['main'], expected_fees)
+        self.assertDictEqual(expenses_report['основні'], expected_fees)
 
     def test_expenses_dont_include_main_section_from_other_months(self):
         Expense.objects.create(
@@ -382,7 +405,7 @@ class TestMonthlyExpenses(TestCase):
             'total': 0,
             'detailed': {}
         }
-        self.assertDictEqual(expenses_report['main'], expected_fees)
+        self.assertDictEqual(expenses_report['основні'], expected_fees)
 
     def test_expenses_include_bar(self):
         bar_1 = Expense.objects.create(
@@ -400,7 +423,7 @@ class TestMonthlyExpenses(TestCase):
 
         expenses_report = get_months_expenses_report(self.year, self.month)
         self.assertEqual(
-            expenses_report['bar']['total'], bar_1.amount + bar_2.amount
+            expenses_report['бар']['total'], bar_1.amount + bar_2.amount
         )
 
     def test_expenses_include_space(self):
@@ -419,5 +442,5 @@ class TestMonthlyExpenses(TestCase):
 
         expenses_report = get_months_expenses_report(self.year, self.month)
         self.assertEqual(
-            expenses_report['space']['total'], space_1.amount + space_2.amount
+            expenses_report['простір']['total'], space_1.amount + space_2.amount
         )

@@ -24,7 +24,7 @@ class ParticipantPaper(models.Model):
     def aggregate_earnings_for_period(cls, start_date, end_date):
         return (
             cls.objects
-               .filter(date_purchased__gte=start_date, date_purchased__lte=end_date)
+               .filter(date_purchased__gte=start_date, date_purchased__lte=end_date, is_volunteer=False)
                .values('paper__name', 'paper__price')
                .annotate(count=models.Count('paper__name'), amount=models.Sum('paper__price'))
         )
